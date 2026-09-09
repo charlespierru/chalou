@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="fb.meta.title">FadeBeat — le rythme qui s’efface</title>
+<meta name="description" data-i18n="fb.meta.description" content="FadeBeat : un métronome dont les temps s’effacent peu à peu, pour intérioriser la pulsation. Gratuit, à jouer directement dans le navigateur.">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html">Charles Pierru</a>
+
+    <nav class="site-nav" aria-label="Navigation principale">
+      <a href="tonik.html" data-i18n="nav.tonik">Tonik</a>
+      <a href="lutrin.html" data-i18n="nav.lutrin">Lutrin</a>
+      <a href="fadebeat.html" aria-current="page">FadeBeat</a>
+      <a href="contact.html" data-i18n="nav.contact">Contact</a>
+
+      <span class="locale-toggle">
+        <button type="button" class="locale-btn active" data-lang="fr" aria-pressed="true">FR</button>
+        <span class="locale-sep" aria-hidden="true">|</span>
+        <button type="button" class="locale-btn" data-lang="en" aria-pressed="false">EN</button>
+      </span>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="fb.eyebrow">Dans le navigateur · gratuit · code public</p>
+      <h1>FadeBeat</h1>
+      <p class="page-lead" data-i18n="fb.lead">Un métronome dont les temps s’effacent peu à
+        peu, jusqu’au silence — puis reviennent.</p>
+
+      <p data-i18n="fb.body1">Tant que le métronome bat, il porte la pulsation à votre place.
+        Le jour où il se tait, vous découvrez si vous l’aviez vraiment. FadeBeat organise
+        cette disparition : vous choisissez quels temps s’effacent, en combien de mesures, et
+        au bout de combien de temps la descente commence.</p>
+
+      <p data-i18n="fb.body2">Chaque temps a ses propres réglages. Vous pouvez faire
+        disparaître le premier temps et garder les autres, ou l’inverse. C’est un exercice
+        d’intériorisation, pas un simple métronome.</p>
+    </div>
+  </section>
+
+  <section class="app-launch">
+    <div class="wrap">
+      <a class="btn btn-primary btn-large" href="apps/fadebeat/index.html"
+         target="_blank" rel="noopener" data-i18n="fb.launch">Ouvrir FadeBeat</a>
+      <p class="launch-hint" data-i18n="fb.launchHint">S’ouvre dans un nouvel onglet, en
+        pleine page. Rien à installer, rien à créer comme compte.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section class="page-more">
+    <div class="wrap">
+      <h2 class="section-title" data-i18n="fb.moreTitle">D’où ça vient</h2>
+
+      <p data-i18n="fb.more1" data-i18n-html>L’idée vient d’une vidéo de Jamie Anderson,
+        <em>The Free Rhythm Tool That’ll Transform Your Groove!</em> J’en ai fait un outil
+        que je pouvais régler finement, pour mon propre travail.</p>
+
+      <p data-i18n="fb.more2">Un seul fichier, rien à installer, aucun compte à créer, et
+        tous les sons fabriqués par le navigateur lui-même : pas un seul fichier audio.</p>
+
+      <div class="app-links">
+        <a class="btn btn-ghost" href="https://github.com/charlespierru/FadeBeat"
+           target="_blank" rel="noopener" data-i18n="fb.github">Le code sur GitHub</a>
+        <a class="btn btn-ghost" href="https://www.youtube.com/watch?v=WVDtPucGMt8"
+           target="_blank" rel="noopener" data-i18n="fb.video">La vidéo de Jamie Anderson</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span data-i18n="footer.tagline">Charles Pierru — musicien et développeur</span>
+    <a href="mentions.html" data-i18n="footer.legal">Mentions</a>
+  </div>
+</footer>
+
+<script type="module" src="js/i18n.js"></script>
+</body>
+</html>

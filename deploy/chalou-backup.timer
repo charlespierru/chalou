@@ -1,0 +1,17 @@
+[Unit]
+Description=chalou.link — sauvegarde nocturne de la base
+Requires=chalou-backup.service
+
+[Timer]
+# 04:15, soit trois quarts d'heure après celle de Tonik (03:30) : les deux ne
+# se disputent ni les deux processeurs de la machine, ni le lien de sortie.
+OnCalendar=*-*-* 04:15:00
+# Si la machine était éteinte à l'heure dite, la sauvegarde se fait au
+# démarrage suivant : on ne saute jamais un jour en silence.
+Persistent=true
+# Léger décalage aléatoire, pour ne pas taper à la seconde près.
+RandomizedDelaySec=5m
+Unit=chalou-backup.service
+
+[Install]
+WantedBy=timers.target

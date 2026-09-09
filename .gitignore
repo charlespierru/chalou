@@ -1,0 +1,15 @@
+# Réglages réels : ils portent l'adresse de la base et son mot de passe.
+# Ils ne naissent que sur le serveur, jamais ici.
+.env
+.env.*
+!.env.example
+
+node_modules/
+npm-debug.log*
+
+# Traces locales
+*.log
+.DS_Store
+
+# Bac à sable des épreuves locales
+epreuve/bac/

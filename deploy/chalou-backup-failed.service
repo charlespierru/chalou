@@ -1,0 +1,11 @@
+[Unit]
+Description=chalou.link — l'échec de la sauvegarde est signalé
+After=local-fs.target
+
+[Service]
+Type=oneshot
+# On réutilise le mécanisme d'alerte déjà en place et déjà éprouvé chez
+# Charles : il prend le nom de l'unité en échec en argument, dépose un
+# marqueur local, et envoie un courriel — sans jamais faire échouer
+# l'alerte elle-même si le courrier ne part pas.
+ExecStart=/usr/local/sbin/tonik-backup-alert chalou-backup.service

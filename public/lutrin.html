@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="lu.meta.title">Lutrin — carnet de travail et lutrin numérique</title>
+<meta name="description" data-i18n="lu.meta.description" content="Lutrin : une application de bureau pour suivre sa pratique instrumentale et lire ses partitions. Gratuite, entièrement locale, code public.">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html">Charles Pierru</a>
+
+    <nav class="site-nav" aria-label="Navigation principale">
+      <a href="tonik.html" data-i18n="nav.tonik">Tonik</a>
+      <a href="lutrin.html" aria-current="page" data-i18n="nav.lutrin">Lutrin</a>
+      <a href="fadebeat.html">FadeBeat</a>
+      <a href="contact.html" data-i18n="nav.contact">Contact</a>
+
+      <span class="locale-toggle">
+        <button type="button" class="locale-btn active" data-lang="fr" aria-pressed="true">FR</button>
+        <span class="locale-sep" aria-hidden="true">|</span>
+        <button type="button" class="locale-btn" data-lang="en" aria-pressed="false">EN</button>
+      </span>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="lu.eyebrow">Sur votre ordinateur · gratuit · code public</p>
+      <h1>Lutrin</h1>
+      <p class="page-lead" data-i18n="lu.lead">Un carnet de travail et un lutrin numérique,
+        entièrement sur votre machine.</p>
+
+      <p data-i18n="lu.body1">Lutrin est né du module Atelier de Tonik. À force de m’en
+        servir, j’ai voulu la même chose sans navigateur, sans compte et sans connexion : une
+        application de bureau qui range mes fiches de travail et affiche mes partitions.</p>
+
+      <p data-i18n="lu.body2">Tout reste chez vous. Vos données tiennent dans un seul fichier
+        sur votre disque. Lutrin ne crée aucun compte, ne parle à aucun serveur, et ne garde
+        de vos partitions que leur emplacement — jamais une copie.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section class="page-more">
+    <div class="wrap">
+
+      <h2 class="section-title" data-i18n="lu.whatTitle">Ce qu’elle fait</h2>
+
+      <ul class="feature-list">
+        <li>
+          <h3 data-i18n="lu.f1.t">Des fiches de travail</h3>
+          <p data-i18n="lu.f1.b">Un morceau, un exercice, un point de théorie, une routine.
+            Avec son état — à commencer, en cours, bloqué, à consolider, acquis — sa
+            priorité, son échéance, son instrument, et le tempo visé.</p>
+        </li>
+        <li>
+          <h3 data-i18n="lu.f2.t">Des séances</h3>
+          <p data-i18n="lu.f2.b">Après avoir travaillé : la date, la durée, le tempo atteint,
+            la difficulté, l’énergie, et ce qu’on veut se rappeler.</p>
+        </li>
+        <li>
+          <h3 data-i18n="lu.f3.t">Aujourd’hui</h3>
+          <p data-i18n="lu.f3.b">Jusqu’à cinq propositions, classées par urgence : en retard,
+            à débloquer, échéance proche, priorité haute, à reprendre.</p>
+        </li>
+        <li>
+          <h3 data-i18n="lu.f4.t">Quatre façons de voir</h3>
+          <p data-i18n="lu.f4.b">Liste, tableau, calendrier, colonnes — avec filtres,
+            recherche et tris.</p>
+        </li>
+        <li>
+          <h3 data-i18n="lu.f5.t">Vos partitions, depuis votre disque</h3>
+          <p data-i18n="lu.f5.b">MusicXML, PDF et images, affichés en pages A4 pleine largeur.
+            Le PDF fonctionne hors connexion.</p>
+        </li>
+        <li>
+          <h3 data-i18n="lu.f6.t">Des statistiques</h3>
+          <p data-i18n="lu.f6.b">Les minutes par semaine, la progression du tempo, la
+            répartition par instrument et par catégorie.</p>
+        </li>
+        <li>
+          <h3 data-i18n="lu.f7.t">Vos données restent les vôtres</h3>
+          <p data-i18n="lu.f7.b">Export en JSON et en CSV, import en JSON. Rien n’est
+            enfermé.</p>
+        </li>
+        <li>
+          <h3 data-i18n="lu.f8.t">En français ou en anglais</h3>
+          <p data-i18n="lu.f8.b">La langue se change dans l’application, et le choix est
+            retenu.</p>
+        </li>
+      </ul>
+
+      <h2 class="section-title" data-i18n="lu.getTitle">Où la prendre</h2>
+      <p class="section-intro" data-i18n="lu.getIntro">Le code et les fichiers d’installation
+        sont sur GitHub — Windows, macOS et Linux.</p>
+
+      <div class="app-links">
+        <a class="btn btn-primary" href="https://github.com/charlespierru/lutrin/releases"
+           target="_blank" rel="noopener" data-i18n="lu.download">Télécharger sur GitHub</a>
+        <a class="btn btn-ghost" href="https://github.com/charlespierru/lutrin"
+           target="_blank" rel="noopener" data-i18n="lu.source">Le code source</a>
+      </div>
+
+      <h2 class="section-title" data-i18n="lu.warnTitle">À savoir avant d’installer</h2>
+
+      <p class="note" data-i18n="lu.warn1" data-i18n-html><strong>Lutrin n’est pas signé, et votre système
+        vous le dira.</strong> Faire certifier un logiciel auprès de Microsoft et d’Apple
+        coûte cher tous les ans.</p>
+
+      <p data-i18n="lu.warn2" data-i18n-html><strong>Sous Windows</strong>, un écran bleu apparaît au
+        lancement : « Windows a protégé votre ordinateur », avec la mention « Éditeur
+        inconnu ». Cliquez sur « Informations complémentaires », puis sur « Exécuter quand
+        même ».</p>
+
+      <p data-i18n="lu.warn3" data-i18n-html><strong>Sous macOS</strong>, le système annonce que le
+        développeur ne peut pas être vérifié. Faites un clic droit sur l’application puis
+        « Ouvrir » ; ou passez par Réglages Système, Confidentialité et sécurité, « Ouvrir
+        quand même ».</p>
+
+      <p data-i18n="lu.warn4" data-i18n-html>C’est par ailleurs une <em>version de test</em>. Elle marche,
+        je m’en sers, mais elle est jeune. Si quelque chose cloche, écrivez-moi.</p>
+
+      <h2 class="section-title" data-i18n="lu.tryTitle">L’essayer sans rien installer</h2>
+
+      <p data-i18n="lu.tryBody">Lutrin vient de l’Atelier de Tonik, et l’Atelier existe
+        toujours. Si vous voulez voir à quoi ressemble ce suivi de travail avant de
+        télécharger quoi que ce soit, ouvrez Tonik : c’est le même principe, dans le
+        navigateur.</p>
+
+      <div class="app-links">
+        <a class="btn btn-ghost" href="tonik.html" data-i18n="lu.toTonik">Voir l’Atelier dans Tonik</a>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span data-i18n="footer.tagline">Charles Pierru — musicien et développeur</span>
+    <a href="mentions.html" data-i18n="footer.legal">Mentions</a>
+  </div>
+</footer>
+
+<script type="module" src="js/i18n.js"></script>
+</body>
+</html>

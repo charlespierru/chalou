@@ -1,0 +1,28 @@
+[Unit]
+Description=chalou.link — dump Mongo + dépôt hors-site
+Wants=network-online.target
+After=network-online.target mongod.service
+# En cas d'échec, l'alerte part par le mécanisme déjà en place chez Charles,
+# le même que celui de la sauvegarde de Tonik.
+OnFailure=chalou-backup-failed.service
+
+[Service]
+Type=oneshot
+User=root
+# L'exécutable vit dans /usr/local/sbin, jamais sous /var/www : un déploiement
+# par archive recrée les fichiers, et le fichier neuf hérite de l'étiquette de
+# son dossier — du contenu web, que systemd refuse d'exécuter. Trois pannes de
+# cette famille sur cette machine.
+ExecStart=/usr/local/sbin/chalou-backup.sh
+
+# Ce script n'a besoin que de Mongo en local, de ses réglages, et de son
+# dossier de travail. Rien d'autre ne doit lui être accessible en écriture.
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ReadWritePaths=/var/backups/chalou
+ReadOnlyPaths=/etc/chalou/sauvegarde
+
+[Install]
+WantedBy=multi-user.target

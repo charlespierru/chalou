@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="meta.title">Charles Pierru — musicien et développeur</title>
+<meta name="description" data-i18n="meta.description" content="Charles Pierru, musicien et développeur. Des outils gratuits pour apprendre la musique : Tonik, Lutrin, FadeBeat.">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html">Charles Pierru</a>
+
+    <nav class="site-nav" aria-label="Navigation principale">
+      <a href="tonik.html" data-i18n="nav.tonik">Tonik</a>
+      <a href="lutrin.html" data-i18n="nav.lutrin">Lutrin</a>
+      <a href="fadebeat.html">FadeBeat</a>
+      <a href="contact.html" data-i18n="nav.contact">Contact</a>
+
+      <span class="locale-toggle">
+        <button type="button" class="locale-btn active" data-lang="fr" aria-pressed="true">FR</button>
+        <span class="locale-sep" aria-hidden="true">|</span>
+        <button type="button" class="locale-btn" data-lang="en" aria-pressed="false">EN</button>
+      </span>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <img class="portrait" src="img/charles-pierru.jpg" width="180" height="180"
+           alt="Charles Pierru" data-i18n-attr="alt" data-i18n="hero.portraitAlt">
+
+      <div>
+        <h1>Charles Pierru</h1>
+        <p class="kicker" data-i18n="hero.kicker">Musicien. Et développeur, de nouveau.</p>
+
+        <p class="lead" data-i18n="hero.lead">La musique d’abord, et depuis longtemps.</p>
+
+        <p data-i18n="hero.p1">Puis ma vue a baissé. La programmation, que je pratiquais
+          autrefois, était devenue hors d’atteinte. L’intelligence artificielle me l’a rendue.</p>
+
+        <p data-i18n="hero.p2">Je m’en sers pour fabriquer les outils qui m’aident à apprendre
+          de nouveaux instruments. Les gammes, les accords, la théorie,
+          le rythme, l’organisation du travail. Ce dont j’avais besoin et que je ne trouvais
+          nulle part.</p>
+
+        <p data-i18n="hero.p3">Trois instruments nouveaux depuis Noël 2024 : la clarinette,
+          puis le saxophone, puis les percussions. Les outils ont suivi. Ils sont tous
+          gratuits.</p>
+
+        <ul class="instruments">
+          <li>
+            <span class="instr-name" data-i18n="hero.instr1">Guitare</span>
+            <span class="instr-since" data-i18n="hero.since1">depuis toujours</span>
+          </li>
+          <li>
+            <span class="instr-name" data-i18n="hero.instr2">Clarinette</span>
+            <span class="instr-since" data-i18n="hero.since2">Noël 2024</span>
+          </li>
+          <li>
+            <span class="instr-name" data-i18n="hero.instr3">Saxophone</span>
+            <span class="instr-since" data-i18n="hero.since3">début 2026</span>
+          </li>
+          <li>
+            <span class="instr-name" data-i18n="hero.instr4">Percussions</span>
+            <span class="instr-since" data-i18n="hero.since4">août 2026</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section class="apps">
+    <div class="wrap">
+      <h2 class="section-title" data-i18n="apps.title">Trois outils</h2>
+      <p class="section-intro" data-i18n="apps.intro">Ils sont nés de mon propre travail
+        d’instrumentiste. Ils serviront peut-être au vôtre.</p>
+
+      <div class="app-cards">
+
+        <article class="app-card">
+          <p class="eyebrow" data-i18n="apps.tonik.eyebrow">En ligne · gratuit</p>
+          <h3>Tonik</h3>
+          <p data-i18n="apps.tonik.body">Gammes et modes, arpèges, accords, théorie, rythme,
+            entraînement de l’oreille — et de quoi organiser et suivre son travail. Rien à
+            installer.</p>
+          <div class="app-links">
+            <a class="btn btn-primary" href="https://tonik.ink" data-i18n="apps.tonik.try">Essayer Tonik</a>
+            <a class="btn btn-ghost" href="tonik.html" data-i18n="apps.more">En savoir plus</a>
+          </div>
+        </article>
+
+        <article class="app-card">
+          <p class="eyebrow" data-i18n="apps.lutrin.eyebrow">Sur votre ordinateur · gratuit</p>
+          <h3>Lutrin</h3>
+          <p data-i18n="apps.lutrin.body">Un carnet de travail et un lutrin numérique : fiches,
+            séances, partitions lues depuis votre disque. Tout reste chez vous — ni compte,
+            ni serveur, ni connexion.</p>
+          <div class="app-links">
+            <a class="btn btn-ghost" href="lutrin.html" data-i18n="apps.more">En savoir plus</a>
+          </div>
+        </article>
+
+        <article class="app-card">
+          <p class="eyebrow" data-i18n="apps.fadebeat.eyebrow">Dans le navigateur · gratuit</p>
+          <h3>FadeBeat</h3>
+          <p data-i18n="apps.fadebeat.body">Un métronome dont les temps s’effacent peu à peu,
+            pour vous obliger à porter la pulsation vous-même.</p>
+          <div class="app-links">
+            <a class="btn btn-primary" href="apps/fadebeat/index.html" target="_blank"
+               rel="noopener" data-i18n="apps.fadebeat.play">Ouvrir FadeBeat</a>
+            <a class="btn btn-ghost" href="fadebeat.html" data-i18n="apps.more">En savoir plus</a>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section class="invite">
+    <div class="wrap">
+      <blockquote data-i18n="invite.quote">« Essayez, et dites-moi ce qui manque. »</blockquote>
+      <p data-i18n="invite.body">Un bogue, une idée, un mot : je réponds. C’est comme ça que
+        ces outils avancent.</p>
+      <p><a class="btn btn-ghost" href="contact.html" data-i18n="invite.cta">Écrire à Charles</a></p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span data-i18n="footer.tagline">Charles Pierru — musicien et développeur</span>
+    <a href="mentions.html" data-i18n="footer.legal">Mentions</a>
+  </div>
+</footer>
+
+<script type="module" src="js/i18n.js"></script>
+</body>
+</html>

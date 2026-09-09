@@ -1,0 +1,124 @@
+/* Charte « Classical Ink » — reprise de tonik.ink.
+ * Toutes les polices sont servies depuis ce serveur : aucun appel extérieur.
+ * Cormorant Garamond et Inter sont sous licence SIL Open Font License,
+ * qui autorise cet hébergement.
+ */
+
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('../fonts/cormorant-garamond-300.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('../fonts/cormorant-garamond-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('../fonts/cormorant-garamond-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('../fonts/cormorant-garamond-400-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/inter-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/inter-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/inter-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Palette */
+  --ink-ivory: #f6f1e7;
+  --ink-cream: #efe8d8;
+  --ink-paper: #fbf7ed;
+  --ink-black: #1a1612;
+  --ink-muted: #5a524a;
+  --ink-faint: #b5ab9c;
+  --ink-hairline: #2b2620;
+  --ink-burgundy: #6b1f2e;
+  --ink-burgundy-deep: #4a131f;
+  --ink-blue: #1a3a5c;
+  --ink-blue-deep: #0f2640;
+  --ink-gold: #b08740;
+
+  /* Typographie */
+  --font-display: 'Cormorant Garamond', 'Baskerville', Georgia, serif;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.75rem;
+  --text-4xl: 4rem;
+  --text-hero: 6rem;
+
+  /* Espacements, base 4 px */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-6: 1.5rem;
+  --s-8: 2rem;
+  --s-12: 3rem;
+  --s-16: 4rem;
+  --s-24: 6rem;
+
+  /* Mouvement */
+  --ease-confident: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-slow: 700ms;
+  --dur-medium: 400ms;
+  --dur-fast: 200ms;
+
+  /* Mise en page */
+  --hairline: 1px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink-ivory: #141018;
+    --ink-cream: #1f1920;
+    --ink-paper: #0f0b13;
+    --ink-black: #e8e0d2;
+    --ink-muted: #9e9586;
+    --ink-faint: #5a524a;
+    --ink-hairline: #d6cebf;
+    --ink-burgundy: #c27a88;
+    --ink-burgundy-deep: #a45a68;
+    --ink-blue: #7ea2cc;
+    --ink-blue-deep: #5e82ac;
+    --ink-gold: #d4a85c;
+  }
+}

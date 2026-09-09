@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FadeBeat – Entraînement Rythmique</title>
+  <script src="tailwind.js"></script>
+  <style>
+    @keyframes beatPulse {
+      0%   { transform: scale(1); }
+      7%   { transform: scale(1.42); }
+      28%  { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .beat-anim { animation: beatPulse 0.48s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+    input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      height: 5px; border-radius: 99px;
+      outline: none; cursor: pointer; width: 100%;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px; height: 15px; border-radius: 50%;
+      cursor: pointer; transition: transform .12s;
+    }
+    input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.28); }
+
+    .s-dur { background: linear-gradient(to right,#f59e0b var(--p,0%),#1f2937 var(--p,0%)); }
+    .s-dur::-webkit-slider-thumb { background:#f59e0b; box-shadow:0 0 6px 2px rgba(245,158,11,.4); }
+    .s-del { background: linear-gradient(to right,#60a5fa var(--p,0%),#1f2937 var(--p,0%)); }
+    .s-del::-webkit-slider-thumb { background:#60a5fa; box-shadow:0 0 6px 2px rgba(96,165,250,.4); }
+    .s-bpm { background: linear-gradient(to right,#a78bfa var(--p,0%),#1f2937 var(--p,0%)); }
+    .s-bpm::-webkit-slider-thumb { background:#a78bfa; box-shadow:0 0 6px 2px rgba(167,139,250,.4); }
+
+    input[type=number]::-webkit-inner-spin-button { opacity: 0.6; }
+    body { background: #07070b; }
+
+    .vol-track { position:relative; width:6px; height:56px; background:#111827; border-radius:99px; overflow:hidden; border:1px solid #1f2937; }
+    .vol-bar   { position:absolute; bottom:0; width:100%; border-radius:99px; transition: height .28s ease, background .28s ease; }
+  </style>
+</head>
+<body class="text-gray-200 min-h-screen flex flex-col items-center py-10 px-4 gap-8">
+
+  <!-- Header -->
+  <div class="text-center select-none">
+    <h1 class="text-4xl font-black tracking-[0.22em] text-white">FADE<span class="text-violet-400">BEAT</span></h1>
+    <p class="text-xs text-gray-600 tracking-widest mt-1 uppercase">Entraînement Rythmique · Atténuation Progressive</p>
+  </div>
+
+  <!-- Beat circles -->
+  <div id="beats" class="flex gap-5 sm:gap-9"></div>
+
+  <!-- Sound selector -->
+  <div class="flex flex-col items-center gap-2 w-full max-w-xl">
+    <p class="text-xs text-gray-600 tracking-widest uppercase">Timbre</p>
+    <div id="sounds" class="flex flex-wrap gap-2 justify-center"></div>
+  </div>
+
+  <!-- Tempo -->
+  <div class="w-full max-w-xl bg-gray-900/70 rounded-2xl p-5 border border-gray-800/70">
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-gray-500 tracking-widest shrink-0 uppercase">Tempo</span>
+      <input type="range" id="s-bpm" class="s-bpm flex-1" min="40" max="300" step="1" value="120">
+      <input type="number" id="n-bpm"
+             class="w-16 bg-gray-800 text-center text-white font-bold rounded-xl py-1.5 text-xl border border-gray-700 focus:outline-none focus:border-violet-500 transition-colors"
+             min="40" max="300" value="120">
+      <span class="text-xs text-gray-600 shrink-0">BPM</span>
+    </div>
+    <p class="text-xs text-gray-700 mt-2 text-right">
+      1 mesure = <span id="meas-s">2.00</span>s &nbsp;·&nbsp; Mesure&nbsp;<span id="meas-n">—</span>
+    </p>
+  </div>
+
+  <!-- Beat controls -->
+  <div class="w-full max-w-xl">
+    <p class="text-xs text-gray-600 tracking-widest text-center mb-3 uppercase">Atténuation par Beat</p>
+    <div id="beat-ctrl" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+  </div>
+
+  <!-- Main buttons -->
+  <div class="flex gap-4">
+    <button id="btn-play"
+            class="flex items-center gap-3 px-10 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200"
+            style="background:#7c3aed;">
+      <span id="play-ico">▶</span><span id="play-lbl">Play</span>
+    </button>
+    <button id="btn-reset"
+            class="px-6 py-4 rounded-2xl font-medium text-sm text-gray-400 border border-gray-700 bg-gray-900/60 hover:bg-gray-800 transition-colors">
+      ↺ Reset atténuations
+    </button>
+  </div>
+
+  <p class="text-xs text-gray-800">Espace : play / stop</p>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const BC = [
+  {n:'1', col:'#a78bfa', glow:'rgba(167,139,250,', bg:'rgba(109,40,217,0.10)', bdr:'#6d28d9'},
+  {n:'2', col:'#fbbf24', glow:'rgba(251,191,36,',  bg:'rgba(180,83,9,0.10)',   bdr:'#b45309'},
+  {n:'3', col:'#22d3ee', glow:'rgba(34,211,238,',  bg:'rgba(8,145,178,0.10)', bdr:'#0891b2'},
+  {n:'4', col:'#4ade80', glow:'rgba(74,222,128,',  bg:'rgba(5,150,105,0.10)', bdr:'#059669'},
+];
+const SOUNDS = [
+  {id:'wood', lbl:'Métronome'},
+  {id:'bell', lbl:'Cloche'},
+  {id:'wblk', lbl:'Woodblock'},
+  {id:'hhat', lbl:'Hi-hat'},
+  {id:'kick', lbl:'Kick doux'},
+  {id:'sine', lbl:'Sinus pur'},
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let tempo = 120;
+let snd   = 'wood';
+// BS[i] = { fd: fadeDuration (mesures), fs: fadeStart (mesures) }
+const BS = [{fd:0,fs:0},{fd:0,fs:0},{fd:0,fs:0},{fd:0,fs:0}];
+let playing = false;
+
+// ── AUDIO ─────────────────────────────────────────────────────────────────────
+let AC, MG;
+
+function initAudio() {
+  if (!AC) {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    MG = AC.createGain(); MG.gain.value = 1; MG.connect(AC.destination);
+  }
+  if (AC.state === 'suspended') AC.resume();
+}
+
+function mkNoise(dur) {
+  const n = Math.ceil(AC.sampleRate * dur);
+  const buf = AC.createBuffer(1, n, AC.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const src = AC.createBufferSource();
+  src.buffer = buf;
+  return src;
+}
+
+function playWood(t, v, acc) {
+  // Noise burst through bandpass (body)
+  const f = AC.createBiquadFilter(), g = AC.createGain();
+  f.type = 'bandpass'; f.frequency.value = acc ? 1350 : 980; f.Q.value = 3;
+  g.gain.setValueAtTime(v * (acc ? 1.0 : 0.62), t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.055);
+  const ns = mkNoise(0.055);
+  ns.connect(f); f.connect(g); g.connect(MG); ns.start(t); ns.stop(t+0.07);
+  // Triangle transient (click)
+  const o = AC.createOscillator(), og = AC.createGain();
+  o.type = 'triangle'; o.frequency.value = acc ? 1050 : 720;
+  og.gain.setValueAtTime(v * (acc ? 0.42 : 0.22), t);
+  og.gain.exponentialRampToValueAtTime(0.001, t + 0.020);
+  o.connect(og); og.connect(MG); o.start(t); o.stop(t+0.025);
+}
+
+function playBell(t, v, acc) {
+  const freq = acc ? 2200 : 1760, dec = acc ? 0.9 : 0.65;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(freq, t);
+  o.frequency.exponentialRampToValueAtTime(freq * 0.97, t + dec);
+  g.gain.setValueAtTime(v * (acc ? 0.85 : 0.65), t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dec);
+  o.connect(g); g.connect(MG); o.start(t); o.stop(t + dec + 0.05);
+}
+
+function playWblk(t, v) {
+  const f = AC.createBiquadFilter(), g = AC.createGain();
+  f.type = 'bandpass'; f.frequency.value = 860; f.Q.value = 5;
+  g.gain.setValueAtTime(v * 1.7, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.028);
+  const ns = mkNoise(0.028);
+  ns.connect(f); f.connect(g); g.connect(MG); ns.start(t); ns.stop(t+0.035);
+}
+
+function playHhat(t, v) {
+  const f = AC.createBiquadFilter(), g = AC.createGain();
+  f.type = 'highpass'; f.frequency.value = 7200; f.Q.value = 0.5;
+  g.gain.setValueAtTime(v * 0.55, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.038);
+  const ns = mkNoise(0.038);
+  ns.connect(f); f.connect(g); g.connect(MG); ns.start(t); ns.stop(t+0.045);
+}
+
+function playKick(t, v, acc) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(acc ? 145 : 95, t);
+  o.frequency.exponentialRampToValueAtTime(acc ? 42 : 30, t + 0.24);
+  g.gain.setValueAtTime(v * (acc ? 1.0 : 0.75), t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+  o.connect(g); g.connect(MG); o.start(t); o.stop(t+0.30);
+}
+
+function playSine(t, v, acc) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'sine'; o.frequency.value = acc ? 880 : 440;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(v * (acc ? 0.75 : 0.55), t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+  o.connect(g); g.connect(MG); o.start(t); o.stop(t+0.16);
+}
+
+function playSound(bi, t, v) {
+  const acc = bi === 0;
+  switch (snd) {
+    case 'wood': playWood(t,v,acc); break;
+    case 'bell': playBell(t,v,acc); break;
+    case 'wblk': playWblk(t,v);     break;
+    case 'hhat': playHhat(t,v);     break;
+    case 'kick': playKick(t,v,acc); break;
+    case 'sine': playSine(t,v,acc); break;
+  }
+}
+
+// ── ATTENUATION ───────────────────────────────────────────────────────────────
+// Returns volume [0–1] for beat bi at measure meas
+// Formula: ramp from 1.0 → 0.0 over fd measures, starting at measure fs
+// Measures 0..fs-1 are full volume; silent from measure fs+fd onwards
+function beatVol(bi, meas) {
+  const {fd, fs} = BS[bi];
+  if (fd === 0)      return 1;       // no fade
+  if (meas < fs)     return 1;       // before fade window
+  const e = meas - fs;
+  if (e >= fd)       return 0;       // fully silent
+  return 1 - e / fd;
+}
+
+// ── SCHEDULER ─────────────────────────────────────────────────────────────────
+const LOOKAHEAD = 0.10; // seconds
+const SCHED_MS  = 25;   // ms
+
+let schedTimer, rafId;
+let nxt = 0, bi = 0, meas = 0;
+let Q = []; // visual event queue: {bi, t, v}
+
+function scheduler() {
+  while (nxt < AC.currentTime + LOOKAHEAD) {
+    const v = beatVol(bi, meas);
+    if (v > 4e-4) playSound(bi, nxt, v);
+    Q.push({bi, t: nxt, v});
+    nxt += 60 / tempo;
+    bi = (bi + 1) % 4;
+    if (bi === 0) meas++;
+  }
+}
+
+function frame() {
+  if (!playing) return;
+  const now = AC.currentTime;
+  while (Q.length && Q[0].t <= now) {
+    const e = Q.shift();
+    flash(e.bi, e.v);
+    if (e.bi === 0) document.getElementById('meas-n').textContent = meas;
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+function startMetronome() {
+  initAudio();
+  playing = true; bi = 0; meas = 0; Q = [];
+  nxt = AC.currentTime + 0.05;
+  schedTimer = setInterval(scheduler, SCHED_MS);
+  rafId = requestAnimationFrame(frame);
+  setPlayUI(true);
+}
+
+function stopMetronome() {
+  playing = false;
+  clearInterval(schedTimer); cancelAnimationFrame(rafId);
+  Q = [];
+  resetCircles();
+  setPlayUI(false);
+  document.getElementById('meas-n').textContent = '—';
+}
+
+// ── VISUALS ───────────────────────────────────────────────────────────────────
+const glowTimers = [null,null,null,null];
+
+function flash(i, v) {
+  const el = document.getElementById('bc'+i);
+  const vb = document.getElementById('vb'+i);
+  if (!el) return;
+  const c = BC[i];
+
+  // Restart CSS animation
+  el.classList.remove('beat-anim');
+  void el.offsetWidth;
+  el.classList.add('beat-anim');
+
+  // Glow proportional to volume
+  if (v > 0.005) {
+    const r1 = (26*v).toFixed(1), s1 = (9*v).toFixed(1);
+    const r2 = (52*v).toFixed(1), s2 = (18*v).toFixed(1);
+    el.style.boxShadow = `0 0 ${r1}px ${s1}px ${c.glow}0.8), 0 0 ${r2}px ${s2}px ${c.glow}0.3)`;
+    el.style.borderColor = c.col;
+  } else {
+    el.style.boxShadow = 'none';
+    el.style.borderColor = c.bdr + '44';
+  }
+
+  // Volume bar
+  if (vb) {
+    vb.style.height = Math.round(v * 100) + '%';
+    vb.style.background = v < 0.04 ? '#374151' : c.col;
+    vb.style.opacity = v < 0.02 ? '0.15' : '0.9';
+  }
+
+  // Auto-clear glow
+  if (glowTimers[i]) clearTimeout(glowTimers[i]);
+  glowTimers[i] = setTimeout(() => {
+    if (el) { el.style.boxShadow = ''; el.style.borderColor = ''; }
+  }, 370);
+}
+
+function resetCircles() {
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('bc'+i);
+    if (el) { el.classList.remove('beat-anim'); el.style.boxShadow=''; el.style.borderColor=''; }
+    const vb = document.getElementById('vb'+i);
+    if (vb) { vb.style.height='100%'; vb.style.background=BC[i].col; vb.style.opacity='0.35'; }
+  }
+}
+
+function setPlayUI(p) {
+  const btn = document.getElementById('btn-play');
+  document.getElementById('play-ico').textContent = p ? '■' : '▶';
+  document.getElementById('play-lbl').textContent = p ? 'Stop' : 'Play';
+  btn.style.background   = p ? '#dc2626' : '#7c3aed';
+  btn.style.boxShadow    = p ? '0 0 22px 6px rgba(220,38,38,0.4)' : '';
+}
+
+// ── DOM BUILD ─────────────────────────────────────────────────────────────────
+function buildBeats() {
+  let html = '';
+  BC.forEach((c, i) => {
+    html += `
+    <div class="flex flex-col items-center gap-2 select-none">
+      <div class="text-xs text-gray-600 tracking-widest">${c.n}</div>
+      <div id="bc${i}" class="beat-ring w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 flex items-center justify-center"
+           style="border-color:${c.bdr}44; background:${c.bg};">
+        <span class="text-2xl sm:text-3xl font-black" style="color:${c.col};opacity:0.45">${c.n}</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <div class="vol-track">
+          <div id="vb${i}" class="vol-bar" style="height:100%;background:${c.col};opacity:0.35;"></div>
+        </div>
+        <span class="text-gray-700" style="font-size:9px;letter-spacing:.08em">VOL</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('beats').innerHTML = html;
+}
+
+function buildSounds() {
+  const c = document.getElementById('sounds');
+  SOUNDS.forEach(s => {
+    const b = document.createElement('button');
+    b.id = 'snd-'+s.id;
+    b.textContent = s.lbl;
+    b.className = sndBtnClass(s.id === snd);
+    b.onclick = () => selSound(s.id);
+    c.appendChild(b);
+  });
+}
+
+function sndBtnClass(active) {
+  return active
+    ? 'px-4 py-2 rounded-full text-sm font-semibold border bg-violet-700 border-violet-500 text-white transition-all'
+    : 'px-4 py-2 rounded-full text-sm font-medium border bg-gray-900 border-gray-700 text-gray-500 hover:text-gray-200 hover:border-gray-500 transition-all';
+}
+
+function selSound(id) {
+  snd = id;
+  SOUNDS.forEach(s => {
+    const b = document.getElementById('snd-'+s.id);
+    if (b) b.className = sndBtnClass(s.id === id);
+  });
+}
+
+function fill(el) {
+  const p = ((el.value - el.min) / (el.max - el.min) * 100).toFixed(1);
+  el.style.setProperty('--p', p+'%');
+}
+
+function buildBeatCtrl() {
+  const c = document.getElementById('beat-ctrl');
+  BC.forEach((bc, i) => {
+    const d = document.createElement('div');
+    d.className = 'bg-gray-900/70 rounded-2xl p-4 border border-gray-800/60 flex flex-col gap-4';
+    d.style.cssText += `border-top:2px solid ${bc.bdr};`;
+    d.innerHTML = `
+      <div class="text-center font-bold text-sm" style="color:${bc.col}">Beat ${bc.n}</div>
+      <div class="flex flex-col gap-1.5">
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-amber-400/70">Durée fade</span>
+          <span class="text-xs font-bold text-amber-400" id="dv${i}">0</span>
+        </div>
+        <input type="range" class="s-dur" id="sd${i}" min="0" max="16" step="1" value="0"
+               oninput="onDur(${i},this)">
+        <span class="text-right text-gray-700" style="font-size:9px">mesures</span>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-blue-400/70">Début après</span>
+          <span class="text-xs font-bold text-blue-400" id="sv${i}">0</span>
+        </div>
+        <input type="range" class="s-del" id="ss${i}" min="0" max="16" step="1" value="0"
+               oninput="onDel(${i},this)">
+        <span class="text-right text-gray-700" style="font-size:9px">mesures</span>
+      </div>`;
+    c.appendChild(d);
+    setTimeout(() => { fill(document.getElementById('sd'+i)); fill(document.getElementById('ss'+i)); }, 0);
+  });
+}
+
+function onDur(i, el) { BS[i].fd = +el.value; document.getElementById('dv'+i).textContent = el.value; fill(el); }
+function onDel(i, el) { BS[i].fs = +el.value; document.getElementById('sv'+i).textContent = el.value; fill(el); }
+
+function resetAtt() {
+  for (let i = 0; i < 4; i++) {
+    BS[i].fd = 0; BS[i].fs = 0;
+    const sd = document.getElementById('sd'+i), ss = document.getElementById('ss'+i);
+    if (sd) { sd.value=0; fill(sd); } if (ss) { ss.value=0; fill(ss); }
+    const dv = document.getElementById('dv'+i), sv = document.getElementById('sv'+i);
+    if (dv) dv.textContent='0'; if (sv) sv.textContent='0';
+  }
+}
+
+// ── TEMPO ─────────────────────────────────────────────────────────────────────
+function setupTempo() {
+  const sl = document.getElementById('s-bpm'), nb = document.getElementById('n-bpm');
+  fill(sl);
+  const sync = (v) => {
+    tempo = v; sl.value = v; nb.value = v; fill(sl);
+    document.getElementById('meas-s').textContent = (240/tempo).toFixed(2);
+  };
+  sl.oninput = () => sync(+sl.value);
+  nb.oninput = () => { const v = +nb.value; if (v>=40&&v<=300) sync(v); };
+  nb.onblur  = () => { nb.value = tempo; };
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+buildBeats();
+buildSounds();
+buildBeatCtrl();
+setupTempo();
+
+document.getElementById('btn-play').onclick  = () => playing ? stopMetronome() : startMetronome();
+document.getElementById('btn-reset').onclick = resetAtt;
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+    e.preventDefault();
+    playing ? stopMetronome() : startMetronome();
+  }
+});
+</script>
+</body>
+</html>

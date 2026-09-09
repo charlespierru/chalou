@@ -1,0 +1,21 @@
+{
+  "name": "chalou-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Site de Charles Pierru — chalou.link",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file=.env server/src/server.js",
+    "dev": "node --watch --env-file=.env.dev server/src/server.js",
+    "epreuve": "node --test epreuve/*.test.js"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "^10.3.0",
+    "fastify": "^5.8.5",
+    "mongodb": "^7.1.1",
+    "nodemailer": "^9.0.3"
+  }
+}

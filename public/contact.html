@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="ct.meta.title">Écrire à Charles Pierru</title>
+<meta name="description" data-i18n="ct.meta.description" content="Un bogue, une idée, une question sur Tonik, Lutrin ou FadeBeat : écrivez à Charles Pierru.">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html">Charles Pierru</a>
+
+    <nav class="site-nav" aria-label="Navigation principale">
+      <a href="tonik.html" data-i18n="nav.tonik">Tonik</a>
+      <a href="lutrin.html" data-i18n="nav.lutrin">Lutrin</a>
+      <a href="fadebeat.html">FadeBeat</a>
+      <a href="contact.html" aria-current="page" data-i18n="nav.contact">Contact</a>
+
+      <span class="locale-toggle">
+        <button type="button" class="locale-btn active" data-lang="fr" aria-pressed="true">FR</button>
+        <span class="locale-sep" aria-hidden="true">|</span>
+        <button type="button" class="locale-btn" data-lang="en" aria-pressed="false">EN</button>
+      </span>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="page-head">
+    <div class="wrap">
+      <h1 data-i18n="ct.title">Écrivez-moi</h1>
+      <p class="page-lead" data-i18n="ct.lead">Un bogue, une idée, une question, un mot :
+        je réponds.</p>
+
+      <p data-i18n="ct.body">Ces outils avancent parce que des gens me disent ce qui leur
+        manque. Si quelque chose ne marche pas, si une explication est obscure, si vous voudriez une fonction qui n’existe pas, je suis à votre écoute.</p>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="wrap">
+
+      <form id="contact-form" class="contact-form" novalidate>
+
+        <div class="field">
+          <label for="nom" data-i18n="ct.nameLabel">Votre nom</label>
+          <input type="text" id="nom" name="nom" required maxlength="120"
+                 autocomplete="name">
+        </div>
+
+        <div class="field">
+          <label for="courriel" data-i18n="ct.mailLabel">Votre adresse électronique</label>
+          <input type="email" id="courriel" name="courriel" required maxlength="200"
+                 autocomplete="email">
+          <p class="field-hint" data-i18n="ct.mailHint">Elle ne sert qu’à vous répondre.</p>
+        </div>
+
+        <div class="field">
+          <label for="message" data-i18n="ct.messageLabel">Votre message</label>
+          <textarea id="message" name="message" required rows="10" maxlength="5000"></textarea>
+        </div>
+
+        <!-- Champ leurre : invisible pour un visiteur, rempli par les robots.
+             S'il est rempli, le message est écarté sans rien dire. -->
+        <div class="leurre" aria-hidden="true">
+          <label for="site">Ne remplissez pas ce champ</label>
+          <input type="text" id="site" name="site" tabindex="-1" autocomplete="off">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-large" id="envoyer"
+                data-i18n="ct.send">Envoyer</button>
+
+        <p class="form-status" id="statut" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="note" data-i18n="ct.privacy" data-i18n-html>Votre message m’arrive par courrier
+        électronique et reste sur mes propres serveurs. Il ne passe par aucun service tiers,
+        et rien n’est utilisé pour autre chose que vous répondre.
+        <a href="mentions.html" data-i18n="ct.privacyLink">En savoir plus</a></p>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span data-i18n="footer.tagline">Charles Pierru — musicien et développeur</span>
+    <a href="mentions.html" data-i18n="footer.legal">Mentions</a>
+  </div>
+</footer>
+
+<script type="module" src="js/i18n.js"></script>
+<script type="module" src="js/contact.js"></script>
+</body>
+</html>
