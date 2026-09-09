@@ -311,3 +311,21 @@ tel quel pour la traçabilité, **c'est cette section qui fait foi**.
   de correction le même jour : c'est la limite du protocole. La suivante, si
   elle est nécessaire, se fera un autre jour.
 
+### 2026-09-10, 00:20 — clôture
+
+- Troisième audit « prêt », 14/14, écart 0 (`docs/fadebeat-webhook-audits.md`).
+- Dépôt git initialisé dans `landing-chalou`, premier commit local `5cb8273`
+  (48 fichiers ; parmi les noms de réglages, seul le gabarit d'exemple est
+  indexé ; le banc et les réglages de banc sont exclus par `.gitignore`).
+  Dépôt distant demandé par Charles : `charlespierru/chalou` sur GitHub, en ssh.
+- Rétro, en trois lignes. (1) Ce que mes propres contrôles n'ont pas vu et
+  que les audits ont trouvé : l'usurpation par X-Forwarded-For, la course
+  entre livraisons, et ma correction fausse de `trustProxy` — un freinage ne
+  se prouve qu'avec DEUX adresses sources, jamais une. (2) Ce que la
+  planification n'avait pas vu : la sémantique exacte d'une option dans la
+  version installée (Fastify 5.12 ferme un compte de sauts) — lire le code de
+  la bibliothèque avant de corriger. (3) Questions posées à Charles qui
+  avaient leur réponse dans le dépôt : aucune ; les questions posées
+  portaient sur ses décisions (webhook à la main, réglage de banc, sujet
+  [WARN]). Mémoire écrite : `freinage-deux-adresses`.
+
