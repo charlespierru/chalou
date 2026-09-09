@@ -235,10 +235,13 @@ finie que quand plus aucun document n'affirme l'ancien état.
   décrit que dans ce document-ci.
 - Le service web n'a **pas** d'alerte en cas d'échec, contrairement à la
   sauvegarde. Un redémarrage en boucle serait invisible.
-- L'épreuve indépendante a listé ce qu'elle ne couvre pas : la durée du
-  freinage anti-robot, la péremption réelle des messages à 24 mois, la
-  concurrence, et une coupure au milieu d'un envoi. Voir
-  `epreuve/epreuve-contact.test.js`.
+- Ce que l'épreuve du formulaire ne couvre pas, d'après les rapports de
+  l'épreuvier (07 et 10 septembre ; cette liste n'est écrite dans aucune
+  version du fichier d'épreuve, seulement ici) : la durée du freinage
+  anti-robot, la péremption réelle des messages à 24 mois, la concurrence, une
+  coupure au milieu d'un envoi ; et, propre au banc autonome du 10 : le vrai
+  certificat de mx.tonik.ink, le vrai mot de passe, le sort du message chez le
+  vrai filtre (indésirables), les droits du compte Mongo réel.
 
 ## 5. Comment travailler avec Charles
 

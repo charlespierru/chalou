@@ -317,7 +317,8 @@ tel quel pour la traçabilité, **c'est cette section qui fait foi**.
 - Troisième audit « prêt », 14/14, écart 0 (`docs/fadebeat-webhook-audits.md`).
 - Dépôt git initialisé dans `landing-chalou`, premier commit local `5cb8273`
   (48 fichiers ; parmi les noms de réglages, seul le gabarit d'exemple est
-  indexé ; le banc et les réglages de banc sont exclus par `.gitignore`).
+  indexé ; le bac des épreuves, `epreuve/bac/`, est exclu par `.gitignore` —
+  les réglages de banc écrits à la main de l'époque n'existent plus depuis 94.c).
   Dépôt distant demandé par Charles : `charlespierru/chalou` sur GitHub, en ssh.
 - Rétro, en trois lignes. (1) Ce que mes propres contrôles n'ont pas vu et
   que les audits ont trouvé : l'usurpation par X-Forwarded-For, la course
