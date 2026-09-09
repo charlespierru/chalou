@@ -369,14 +369,19 @@ amendements. Ce qui mérite d'être su au-delà :
   rechargement sans redémarrage, photo des quatre sites avant et après, refus
   et restauration du vhost si le test échoue. Exigence de Charles : « le
   moindre changement sur un site n'a aucune répercussion sur les autres ».
-- **Trouvaille 1 — l'épreuve du formulaire est cassée depuis le 2026-09-08.**
-  Le durcissement du courrier (nom, port 587, TLS) fait refuser au service le
-  faux serveur de courrier du banc (`faux-serveur-courrier.js`, adresse
-  numérique, port 2525, sans TLS). `epreuve-contact.test.js` ne démarre plus
-  le service. L'épreuve du webhook contourne le problème avec son propre faux
-  courrier STARTTLS et un module préchargé qui redirige le port 587 vers le
-  banc — artifice dit en tête du fichier. À réparer : le faux courrier du
-  formulaire de la même façon, ou un réglage de banc explicite.
+- **Trouvaille 1 — l'épreuve du formulaire ne tournait plus depuis le
+  durcissement du courrier du 2026-09-08. RÉPARÉE le 2026-09-10 (nœud 94.c).**
+  Elle dépendait d'un banc lancé à la main (fichier de réglages hors dépôt,
+  service, base, faux courrier en clair) que le service refusait depuis le
+  garde-fou « nom, port 587, identifiant, TLS ». Elle est désormais AUTONOME,
+  sur le modèle de l'épreuve du webhook : faux courrier STARTTLS+AUTH avec
+  certificat jetable, module préchargé qui détourne le seul port 587 vers le
+  banc, service lancé par l'épreuve, base jetable sur le mongod local de la
+  station. Le faux courrier TLS est un module partagé par les deux épreuves,
+  `epreuve/epreuve-banc-courrier.js` ; l'ancien faux courrier en clair est
+  retiré. Rien du service n'a été touché. Mesuré le 2026-09-10 : formulaire
+  30/30 (dont un cas neuf : courrier parti chiffré), webhook 87/87, aucune
+  ligne régressée. Lancement : `npm run epreuve`, sans rien préparer.
 - **Trouvaille 2 — le courriel d'alerte arrive dans la boîte de réception,
   pas dans le dossier « Alertes »** de Charles. Aucune règle de tri côté
   serveur (mesuré : `doveadm sieve list` vide) ; le tri est donc dans son

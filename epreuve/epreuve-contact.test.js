@@ -1,49 +1,74 @@
 /* ÉPREUVE INDÉPENDANTE — service du formulaire de contact de chalou.link.
  *
  * Écrite à partir du BUT et des INTERDITS, sans lire la logique du service
- * (routes/contact.js, config.js et mail.js n'ont pas été ouverts).
- * Seuls les noms des champs du formulaire (public/js/contact.js) et les noms
- * des réglages (.env.example) ont été relevés : sans eux, aucune requête ne
- * pourrait être formée.
+ * (routes/contact.js et mail.js n'ont pas été ouverts). Seuls ont été relevés :
+ * les noms des champs du formulaire (public/js/contact.js), les noms des
+ * réglages (config.js, .env.example) et le fait que le courrier part
+ * OBLIGATOIREMENT en STARTTLS authentifié sur le port 587 (garde-fou de
+ * config.js, 2026-09-08).
+ *
+ * Cas A1…A12 et T0…T8 écrits le 2026-09-07 ; banc refait le 2026-09-10 sur le
+ * modèle de l'épreuve du webhook (09-09), pour être AUTONOME : plus aucun
+ * fichier ni service à lancer à la main. Le cas T1bis (courrier parti chiffré)
+ * est ajouté à cette occasion.
+ *
+ * LE BANC, ET SES ARTIFICES (dits franchement) :
+ *  1. Le port 587 est imposé par config.js et ne peut pas être lié par un
+ *     utilisateur ordinaire. Chaque service est donc lancé avec un module
+ *     préchargé (--import, URL data:, fourni par epreuve-banc-courrier.js) qui
+ *     ne fait qu'UNE chose : quand le service ouvre une connexion vers le port
+ *     587, elle est dirigée vers le port du faux courrier du banc.
+ *  2. Le faux courrier parle STARTTLS avec un certificat auto-signé fabriqué à
+ *     chaque exécution, donné au service par NODE_EXTRA_CA_CERTS. Il note si
+ *     chaque message est arrivé après l'élévation TLS.
+ *  3. « Courrier injoignable » (A1, T4) : le service refuse tout port autre
+ *     que 587, donc on ne peut plus lui donner un port mort. Le module
+ *     préchargé de CES services-là dirige le 587 vers un port où personne
+ *     n'écoute : connexion refusée, panne franche, service non modifié.
+ *  4. L'archive est une base JETABLE (chalou_banc_<COURSE>) sur le mongod
+ *     local sans authentification ; elle est supprimée à la fin. Les cas
+ *     « archive morte » gardent un port mort.
+ *  5. Le journal du service (A6, A7) est sa sortie, écrite par l'épreuve dans
+ *     un fichier du bac.
  *
  * Chaque cas se donne un REPÈRE unique et une ADRESSE SOURCE unique
- * (127.x.y.z, toutes locales) : l'épreuve peut donc tourner plusieurs fois
+ * (127.x.y.z, toutes locales) : l'épreuve peut tourner plusieurs fois
  * d'affilée sans se polluer, et deux cas ne se volent jamais leur quota.
  *
- * Lancement : node --test epreuve/*.test.js
+ * Lancement : node --test epreuve/epreuve-contact.test.js
+ * Réglages facultatifs : EPREUVE_RACINE (racine du projet), EPREUVE_BAC
+ * (dossier de banc ; défaut epreuve/bac).
  */
 
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import net from 'node:net';
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { MongoClient } from 'mongodb';
+import { demarrerFauxCourrier, texteCourrier, fabriquerCertificat, PRECHARGE, portLibre } from './epreuve-banc-courrier.js';
 
 /* ─────────────────────────  le banc  ───────────────────────── */
 
-const RACINE = fileURLToPath(new URL('../', import.meta.url));
-const BAC = path.join(RACINE, 'epreuve/bac');
-const FICHIER_COURRIER = path.join(BAC, 'courrier-recu.txt');
-const FICHIER_JOURNAL = path.join(BAC, 'service.log');
-const REGLAGES_BANC = path.join(BAC, 'reglages-banc.conf');
-
-const reglages = Object.fromEntries(
-  fs.readFileSync(REGLAGES_BANC, 'utf8')
-    .split('\n')
-    .filter((l) => l.trim() && !l.trim().startsWith('#') && l.includes('='))
-    .map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim()]),
-);
-
-const PORT_BANC = Number(reglages.PORT ?? 3099);
-const MAIL_TO = reglages.MAIL_TO ?? 'charles@chalou.link';
-const MONGO_URL = reglages.MONGO_URL ?? 'mongodb://127.0.0.1:27099';
-const MONGO_DB = reglages.MONGO_DB ?? 'chalou_banc';
-
+const RACINE = process.env.EPREUVE_RACINE
+  ? path.resolve(process.env.EPREUVE_RACINE)
+  : fileURLToPath(new URL('../', import.meta.url));
 const COURSE = Math.random().toString(36).slice(2, 7).toUpperCase();
+const BAC = path.join(process.env.EPREUVE_BAC ?? path.join(RACINE, 'epreuve/bac'), `contact-${COURSE}`);
+const FICHIER_JOURNAL = path.join(BAC, 'service-principal.log');
+const CHEMIN_CLE_WEBHOOK = path.join(BAC, 'cle-partagee-webhook');   // SECRET-EN-ARGUMENT-CITE: chemin de banc, valeur aléatoire jetable
+const DOSSIER_FADEBEAT = path.join(BAC, 'fadebeat');
+
+const MAIL_TO = 'charles@chalou.link';
+const MONGO_URL = 'mongodb://127.0.0.1:27017';
+const MONGO_DB = `chalou_banc_${COURSE}`;
+/* Une archive morte : un port où personne n'écoute, avec un délai court pour
+ * que la panne soit constatée vite (le service n'est pas modifié pour autant). */
+const mongoMort = () => `mongodb://127.0.0.1:${PORT_MORT_MONGO}/${MONGO_DB}?serverSelectionTimeoutMS=1500&connectTimeoutMS=1500`;
+
 let compteur = 0;
 const repere = (cas) => `EPR-${cas}-${COURSE}-${++compteur}`;
 
@@ -74,7 +99,7 @@ function envoyer(methode, chemin, corps, opts = {}) {
     const req = http.request(
       {
         host: '127.0.0.1',
-        port: opts.port ?? PORT_BANC,
+        port: opts.port ?? PORT_SERVICE,
         path: chemin,
         method: methode,
         family: 4,
@@ -110,30 +135,15 @@ const messageHonnete = (rep, extra = {}) => ({
 
 /* ─────────────────  lecture du courrier réellement parti  ───────────────── */
 
-function decoderQP(texte) {
-  const plat = texte.replace(/=\r?\n/g, '');
-  const octets = [];
-  for (let i = 0; i < plat.length; i++) {
-    if (plat[i] === '=' && /^[0-9A-Fa-f]{2}$/.test(plat.slice(i + 1, i + 3))) {
-      octets.push(parseInt(plat.slice(i + 1, i + 3), 16));
-      i += 2;
-    } else {
-      for (const o of Buffer.from(plat[i], 'utf8')) octets.push(o);
-    }
-  }
-  return Buffer.from(octets).toString('utf8');
-}
-
-function blocsCourrier(depuisOctet = 0) {
-  if (!fs.existsSync(FICHIER_COURRIER)) return [];
-  const tout = fs.readFileSync(FICHIER_COURRIER);
-  const brut = tout.slice(depuisOctet).toString('utf8');
-  return brut.split(/^===== MESSAGE /m).slice(1).map((b) => ({ brut: b, decode: decoderQP(b) }));
-}
-
-const tailleCourrier = () => (fs.existsSync(FICHIER_COURRIER) ? fs.statSync(FICHIER_COURRIER).size : 0);
+/* Le faux courrier garde chaque message en mémoire : { date, de, vers[],
+ * chiffre, brut }. On y ajoute le texte décodé pour y chercher un repère. */
+let courrier = null;
+const bloc = (m) => ({ ...m, decode: texteCourrier(m), destinataires: m.vers.join(', ') });
+const blocsCourrier = (depuis = 0) => courrier.depuis(depuis).map(bloc);
 const courrierDe = (rep) => blocsCourrier().find((b) => b.decode.includes(rep)) ?? null;
 const attendreCourrier = (rep, ms = 8000) => jusqua(async () => courrierDe(rep), ms);
+/* Les en-têtes d'un message : tout ce qui précède la première ligne vide. */
+const entetesDe = (b) => b.brut.split(/\n\s*\n/)[0] ?? '';
 
 /* ─────────────────────  lecture de l'archive  ───────────────────── */
 
@@ -160,35 +170,47 @@ function arreterTout() {
 }
 process.on('exit', arreterTout);
 
-function portOccupe(port) {
-  return new Promise((r) => {
-    const s = net.connect({ port, host: '127.0.0.1' });
-    s.on('connect', () => { s.destroy(); r(true); });
-    s.on('error', () => r(false));
-    setTimeout(() => { s.destroy(); r(false); }, 800);
-  });
-}
-async function portLibre(base) {
-  for (let p = base; p < base + 60; p++) if (!(await portOccupe(p))) return p;
-  throw new Error('aucun port libre');
-}
+let PORT_SERVICE = 0;
+let PORT_COURRIER = 0;
+let PORT_MORT_SMTP = 0;    /* un port sur lequel personne n'écoute : panne franche du courrier */
+let PORT_MORT_MONGO = 0;   /* idem pour l'archive */
+let CHEMIN_CERT = '';
+let service = null;
 
 /* Écrit un fichier de réglages dérivé du banc et démarre le service dessus.
- * Rend TOUJOURS la main : si le service ne démarre pas, on le dit. */
-async function lancerService(nom, modifs) {
+ * Rend TOUJOURS la main : si le service ne démarre pas, on le dit.
+ * opts.portCourrier : où le 587 est dirigé pour CE service (défaut : le faux
+ * courrier ; un port mort pour jouer « courrier injoignable »). */
+async function lancerService(nom, modifs = {}, opts = {}) {
   const port = await portLibre(3400 + Math.floor(Math.random() * 300));
-  const conf = { ...reglages, PORT: String(port), ...modifs };
+  const conf = {
+    NODE_ENV: 'production', PORT: String(port),
+    MONGO_URL, MONGO_DB,
+    SMTP_HOST: 'localhost', SMTP_PORT: '587', SMTP_USER: 'banc',
+    SMTP_PASS: 'banc-mdp',  // SECRET-EN-ARGUMENT-CITE: faux courrier de banc, valeur factice acceptée quelle qu'elle soit
+    MAIL_FROM: 'site@chalou.link', MAIL_TO,
+    DELAI_MINIMAL_MS: '3000', CONSERVATION_MOIS: '24',
+    GITHUB_WEBHOOK_SECRET_FILE: CHEMIN_CLE_WEBHOOK,  // SECRET-EN-ARGUMENT-CITE: nom du réglage ; la valeur est un chemin de banc
+    FADEBEAT_DOSSIER: DOSSIER_FADEBEAT,
+    ...modifs,
+  };
   for (const [k, v] of Object.entries(conf)) if (v === null) delete conf[k];
-  const chemin = path.join(BAC, `reglages-${nom}-${COURSE}.conf`);
-  fs.writeFileSync(chemin, Object.entries(conf).map(([k, v]) => `${k}=${v}`).join('\n') + '\n');
+  const chemin = path.join(BAC, `reglages-${nom}.conf`);
+  fs.writeFileSync(chemin, Object.entries(conf).map(([k, v]) => `${k}=${v}`).join('\n') + '\n', { mode: 0o600 });
 
-  const proc = spawn(process.execPath, [`--env-file=${chemin}`, 'server/src/server.js'], {
+  const proc = spawn(process.execPath, [`--env-file=${chemin}`, `--import=${PRECHARGE(opts.portCourrier ?? PORT_COURRIER)}`, 'server/src/server.js'], {
     cwd: RACINE, stdio: ['ignore', 'pipe', 'pipe'],
+    env: { PATH: process.env.PATH, HOME: process.env.HOME, NODE_EXTRA_CA_CERTS: CHEMIN_CERT },
   });
   enfants.push(proc);
   let sortie = '';
-  proc.stdout.on('data', (d) => { sortie += d.toString(); });
-  proc.stderr.on('data', (d) => { sortie += d.toString(); });
+  /* Le journal du service : sa sortie, écrite dans le bac de façon synchrone
+   * pour que les cas A6/A7 lisent un fichier à jour. */
+  const journal = path.join(BAC, `service-${nom}.log`);
+  fs.writeFileSync(journal, '');
+  const noter = (d) => { sortie += d.toString(); fs.appendFileSync(journal, d); };
+  proc.stdout.on('data', noter);
+  proc.stderr.on('data', noter);
   let codeSortie = null;
   proc.on('exit', (c) => { codeSortie = c; });
 
@@ -199,7 +221,7 @@ async function lancerService(nom, modifs) {
   }, 18000, 400);
 
   return {
-    port, chemin,
+    port, chemin, journal,
     demarre: vivant === 'vivant',
     codeSortie: () => codeSortie,
     sortie: () => sortie,
@@ -207,22 +229,41 @@ async function lancerService(nom, modifs) {
   };
 }
 
-/* Un port sur lequel personne n'écoute : pour simuler une panne franche. */
-let PORT_MORT_SMTP = 0;
-let PORT_MORT_MONGO = 0;
+/* ─────────────────────────  mise en place  ───────────────────────── */
 
 before(async () => {
+  fs.mkdirSync(DOSSIER_FADEBEAT, { recursive: true });
+  /* Le service exige un secret de webhook (première ligne ≥ 16 signes) et un
+   * dossier FadeBeat, même si cette épreuve ne les exerce pas. */
+  fs.writeFileSync(CHEMIN_CLE_WEBHOOK, `banc-${COURSE}-${randomBytes(20).toString('hex')}\n`, { mode: 0o600 });
+
+  const certificat = fabriquerCertificat(BAC);
+  CHEMIN_CERT = certificat.cheminCert;
+
   PORT_MORT_SMTP = await portLibre(2600);
   PORT_MORT_MONGO = await portLibre(27600);
+  PORT_COURRIER = await portLibre(2700 + Math.floor(Math.random() * 200));
+  courrier = await demarrerFauxCourrier({ port: PORT_COURRIER, cle: certificat.cle, cert: certificat.cert });
+
+  /* L'archive de banc doit être joignable, sinon la moitié des cas ne prouve rien. */
+  await docsRecents().catch((e) => { throw new Error(`mongod local injoignable sur ${MONGO_URL} : ${e.message}`); });
+
+  service = await lancerService('principal');
+  PORT_SERVICE = service.port;
+  if (!service.demarre) throw new Error(`le service ne démarre pas sur le banc (code ${service.codeSortie()}) :\n${service.sortie().slice(0, 1500)}`);
 });
 
 after(async () => {
   arreterTout();
-  /* On ne laisse pas traîner les réglages fabriqués pour cette exécution. */
-  for (const f of fs.readdirSync(BAC)) {
-    if (f.startsWith('reglages-') && f.endsWith(`-${COURSE}.conf`)) fs.unlinkSync(path.join(BAC, f));
+  await courrier?.fermer().catch(() => {});
+  /* La base jetable de cette exécution disparaît avec elle. */
+  if (clientMongo) {
+    await clientMongo.db(MONGO_DB).dropDatabase().catch(() => {});
+    await clientMongo.close().catch(() => {});
   }
-  if (clientMongo) await clientMongo.close().catch(() => {});
+  /* On ne laisse traîner ni clé, ni réglages ; journaux restent pour lecture. */
+  for (const f of ['cle-partagee-webhook', 'banc-tls-cle']) { try { fs.unlinkSync(path.join(BAC, f)); } catch { /* rien */ } }
+  for (const f of fs.readdirSync(BAC)) if (f.startsWith('reglages-')) fs.unlinkSync(path.join(BAC, f));
 });
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -232,10 +273,8 @@ after(async () => {
 describe('INTERDITS', () => {
 
   test("A1 — ne jamais dire « reçu » quand ni le courrier ni la copie n'ont abouti", { timeout: 150000 }, async (t) => {
-    const svc = await lancerService('sourd-et-muet', {
-      SMTP_PORT: String(PORT_MORT_SMTP),
-      MONGO_URL: `mongodb://127.0.0.1:${PORT_MORT_MONGO}`,
-    });
+    /* Courrier injoignable : le 587 de CE service mène à un port mort. */
+    const svc = await lancerService('sourd-et-muet', { MONGO_URL: mongoMort() }, { portCourrier: PORT_MORT_SMTP });
     try {
       if (!svc.demarre) {
         t.diagnostic(`branche : le service refuse de démarrer (code ${svc.codeSortie()})`);
@@ -261,7 +300,7 @@ describe('INTERDITS', () => {
      * lit que « la connexion a marché » croira le message parti. */
     const svc = await lancerService('destinataire-refuse', {
       MAIL_TO: 'quelquun@ailleurs-non-relaye.example',
-      MONGO_URL: `mongodb://127.0.0.1:${PORT_MORT_MONGO}`,
+      MONGO_URL: mongoMort(),
     });
     try {
       if (!svc.demarre) {
@@ -404,7 +443,7 @@ describe('INTERDITS', () => {
   test("A8 — aucun champ du formulaire n'ajoute de destinataire caché", async (t) => {
     const rep = repere('A8');
     const cache = `cache-${rep.toLowerCase()}@chalou.link`;  /* domaine relayé par le serveur : vraiment dangereux */
-    const avant = tailleCourrier();
+    const avant = Date.now();
 
     const r = await envoyer('POST', '/api/contact', {
       nom: `Pirate ${rep}\r\nBcc: ${cache}`,
@@ -424,25 +463,24 @@ describe('INTERDITS', () => {
       t.diagnostic(`message d'injection refusé avant expédition (${r.statut}) — l'analyse d'enveloppe porte sur ${blocs.length} bloc(s)`);
     }
     for (const b of blocs) {
-      const dest = (b.brut.match(/^enveloppe vers : (.*)$/m) ?? [, ''])[1];
+      const dest = b.destinataires;
       assert.ok(dest.includes(MAIL_TO), `enveloppe sans le destinataire prévu : « ${dest} »`);
       assert.ok(!dest.toLowerCase().includes('cache-'), `DESTINATAIRE CACHÉ dans l'enveloppe : « ${dest} »`);
-      assert.equal(dest.split(',').length, 1, `plusieurs destinataires d'enveloppe : « ${dest} »`);
+      assert.equal(b.vers.length, 1, `plusieurs destinataires d'enveloppe : « ${dest} »`);
 
-      const entetes = b.brut.split(/\n-----\n/)[1]?.split(/\n\s*\n/)[0] ?? '';
+      const entetes = entetesDe(b);
       assert.ok(!/^b?cc\s*:/im.test(entetes), `en-tête Cc/Bcc ajouté au courrier :\n${entetes}`);
       const to = (entetes.match(/^To:(.*)$/mi) ?? [, ''])[1];
       assert.ok(!to.includes(','), `plusieurs destinataires dans l'en-tête To : « ${to} »`);
     }
     /* Nulle part, même dans une seconde transaction SMTP glissée par injection. */
-    const ajout = fs.readFileSync(FICHIER_COURRIER, 'utf8').slice(avant);
-    assert.ok(!/^enveloppe vers :.*cache-/mi.test(ajout), "un message a été expédié à un destinataire caché");
+    assert.ok(!blocs.some((b) => b.destinataires.toLowerCase().includes('cache-')), "un message a été expédié à un destinataire caché");
   });
 
   test("A8bis — destinataire caché SANS caractère de contrôle (ce qu'un filtre sur les retours à la ligne ne voit pas)", { timeout: 60000 }, async (t) => {
     const rep = repere('A8bis').toLowerCase();
     const complice = `complice-${rep}@chalou.link`;   /* domaine que le serveur relaie vraiment */
-    const avant = tailleCourrier();
+    const avant = Date.now();
 
     /* Trois formes voisines : la syntaxe d'adresse, la virgule, le saut de
      * ligne nu. Aucune n'a besoin d'un CRLF complet. */
@@ -463,10 +501,10 @@ describe('INTERDITS', () => {
     assert.ok(blocs.length >= 1,
       `aucune des trois formes n'a produit de courrier (${codes.join(' | ')}) : ce cas ne prouve rien sur l'expédition`);
     for (const b of blocs) {
-      const dest = (b.brut.match(/^enveloppe vers : (.*)$/m) ?? [, ''])[1];
+      const dest = b.destinataires;
       assert.ok(!dest.includes('complice-'), `DESTINATAIRE CACHÉ dans l'enveloppe : « ${dest} »`);
-      assert.equal(dest.split(',').length, 1, `plusieurs destinataires d'enveloppe : « ${dest} »`);
-      const entetes = b.brut.split(/\n-----\n/)[1]?.split(/\n\s*\n/)[0] ?? '';
+      assert.equal(b.vers.length, 1, `plusieurs destinataires d'enveloppe : « ${dest} »`);
+      const entetes = entetesDe(b);
       assert.ok(!/^b?cc\s*:/im.test(entetes), `en-tête Cc/Bcc ajouté :\n${entetes}`);
     }
   });
@@ -545,7 +583,7 @@ describe('INTERDITS', () => {
   });
 
   test("A12 — archive injoignable au démarrage : le service ne se tait pas là-dessus", { timeout: 120000 }, async (t) => {
-    const svc = await lancerService('archive-morte-bruit', { MONGO_URL: `mongodb://127.0.0.1:${PORT_MORT_MONGO}` });
+    const svc = await lancerService('archive-morte-bruit', { MONGO_URL: mongoMort() });
     try {
       if (!svc.demarre) { t.diagnostic('le service ne démarre pas sans archive — voir T3'); return; }
       const rep = repere('A12');
@@ -605,10 +643,19 @@ describe('TÉMOINS', () => {
         `un visiteur honnête est refusé (${reponse.statut} ${reponse.texte})`);
       const bloc = await attendreCourrier(rep, 10000);
       assert.notEqual(bloc, null, "le message est accepté mais n'arrive jamais dans la boîte");
-      assert.ok(bloc.brut.includes(MAIL_TO), `le courrier ne va pas à ${MAIL_TO} : ${bloc.brut.slice(0, 200)}`);
+      assert.ok(bloc.vers.some((v) => v.includes(MAIL_TO)), `le courrier ne va pas à ${MAIL_TO} : enveloppe « ${bloc.destinataires} »`);
       assert.ok(bloc.decode.includes('Où êtes-vous ? œuf, ça va'), 'les accents du message sont abîmés en route');
       assert.ok(bloc.decode.includes(`camille.durand+${rep.toLowerCase()}@example.com`),
         "l'adresse du visiteur n'apparaît pas dans le courrier : impossible de lui répondre");
+    });
+
+    test("T1bis — il est parti CHIFFRÉ (après STARTTLS), avec authentification", async () => {
+      /* Le faux courrier note si le message est arrivé après l'élévation TLS.
+       * Un service qui enverrait en clair sur le 587 passerait T1 et
+       * finirait chez le vrai serveur… dans les indésirables ou refusé. */
+      const bloc = await attendreCourrier(rep, 10000);
+      assert.notEqual(bloc, null, 'aucun courrier à examiner');
+      assert.equal(bloc.chiffre, true, 'le courrier du formulaire est parti EN CLAIR : le service n\'a pas demandé STARTTLS');
     });
 
     test("T2 — il est retrouvable dans la copie conservée, intact", async () => {
@@ -622,7 +669,7 @@ describe('TÉMOINS', () => {
   });
 
   test('T3 — copie impossible : le courrier part quand même', { timeout: 150000 }, async () => {
-    const svc = await lancerService('sans-archive', { MONGO_URL: `mongodb://127.0.0.1:${PORT_MORT_MONGO}` });
+    const svc = await lancerService('sans-archive', { MONGO_URL: mongoMort() });
     try {
       assert.ok(svc.demarre,
         `archive injoignable : le service refuse de servir (code ${svc.codeSortie()}) — tous les messages sont perdus alors que le courrier pouvait partir\n${svc.sortie().slice(0, 400)}`);
@@ -637,7 +684,8 @@ describe('TÉMOINS', () => {
   });
 
   test('T4 — courrier impossible : la copie est faite quand même', { timeout: 150000 }, async () => {
-    const svc = await lancerService('sans-courrier', { SMTP_PORT: String(PORT_MORT_SMTP) });
+    /* Courrier injoignable : le 587 de CE service mène à un port mort. */
+    const svc = await lancerService('sans-courrier', {}, { portCourrier: PORT_MORT_SMTP });
     try {
       assert.ok(svc.demarre,
         `courrier injoignable : le service refuse de servir (code ${svc.codeSortie()}) — aucune copie n'est prise\n${svc.sortie().slice(0, 400)}`);
@@ -646,6 +694,7 @@ describe('TÉMOINS', () => {
       assert.equal(r.silence, false, 'pas de réponse');
       assert.notEqual(await attendreArchive(rep, 12000), null,
         "courrier injoignable : le message n'a pas été copié non plus, il est définitivement perdu");
+      assert.equal(courrierDe(rep), null, 'le banc est faux : un courrier est arrivé alors que le 587 menait à un port mort');
     } finally { svc.arreter(); }
   });
 

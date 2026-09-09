@@ -130,7 +130,7 @@ Rejouée isolément : livraison 1 lit `master = A`, brut de A lent (1,5 s) ; liv
 ## 3. Trouvailles hors critères
 
 - Pas de `.git` (M-7 toujours ouvert, commit attendu en porte).
-- `epreuve/bac/` contient un `secret-webhook` et `reglages-banc.conf` de 22:17 (banc manuel de l'implémenteur), gitignorés ; pas le vrai secret d'après leur date/usage, mais un fichier nommé « secret » qui traîne.
+- `epreuve/bac/` contient un `secret-webhook` et `reglages-banc.conf` de 22:17 (banc manuel de l'implémenteur), gitignorés ; pas le vrai secret d'après leur date/usage, mais un fichier nommé « secret » qui traîne. *(Note du 2026-09-10 : ces fichiers n'existent plus ; depuis le nœud 94.c, aucune épreuve ne lit de réglages de banc pré-écrits.)*
 - Alerte I-2 « bavarde » sur toute branche de travail du dépôt FadeBeat : chaque push feature enverra un courriel [WARN].
 
 ## 4. Couverture
@@ -189,7 +189,7 @@ Rejouée isolément : livraison 1 lit `master = A`, brut de A lent (1,5 s) ; liv
 - **Le temps vu par GitHub n'est pas borné pour une livraison en file** (mineur, déjà écrit en commentaire dans `github.js` l. 239-242). Dans ma course, r2 a répondu en 8 758 ms alors que son propre budget n'a consommé ~1,2 s : GitHub compte depuis l'envoi. Si r1 consomme ses 8,5 s pleins, r2 peut dépasser 10 s côté GitHub : le site est quand même déployé, mais « Recent Deliveries » affichera un échec — fausse alarme, pas panne silencieuse. Acceptable pour un push par jour ; à savoir.
 - Le fichier servi en prod porte encore une marque horodatée (`… mis à jour par webhook le 2026-09-09T21:02:08Z`) : aucun push n'a eu lieu depuis la correction M-3, c'est la version d'avant. Le banc prouve que la prochaine écriture posera la marque sans horodatage. Rien à faire.
 - `docs/PASSATION.md` l. 236 (« Le service web n'a pas d'alerte en cas d'échec ») parle du redémarrage en boucle du service, pas des livraisons : toujours vrai, non trompeur.
-- L'épreuve `epreuve-contact.test.js` reste cassée (connue, hors chantier, écrite dans PASSATION §8).
+- L'épreuve `epreuve-contact.test.js` reste cassée (connue, hors chantier, écrite dans PASSATION §8). *(Note du 2026-09-10 : constat daté du 09-09 ; réparée depuis, nœud 94.c, 30/30 sur banc autonome.)*
 - Hook « porte » : mon premier banc a été bloqué (valeur factice `SMTP_PASS` pour un faux courrier inexistant, dans un heredoc). Je n'ai pas contourné : j'ai utilisé la voie que le hook prescrit lui-même pour une citation de banc (marqueur `SECRET-EN-ARGUMENT-CITE` sur la ligne, journalisé dans `~/.local/state/porte-citations.log`), exactement comme l'épreuve du repo à sa ligne 373. À signaler au superviseur pour transparence.
 - Aucune écriture dans le repo de ma part : le bac de l'épreuve et mes bancs sont dans `/tmp/claude-1000/…/scratchpad/` ; les dossiers `epreuve/bac/webhook-*` datent des passes de l'implémenteur.
 

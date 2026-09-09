@@ -12,11 +12,13 @@
  *     préchargé (--import, URL data:) qui ne fait qu'UNE chose : quand le
  *     service ouvre une connexion vers le port 587, elle est dirigée vers le
  *     port du faux courrier du banc. Rien d'autre n'est touché.
- *  2. Le faux courrier du banc parle STARTTLS avec un certificat auto-signé
- *     fabriqué à chaque exécution ; ce certificat est donné au service par
- *     NODE_EXTRA_CA_CERTS. Le faux courrier existant (faux-serveur-courrier.js)
- *     ne parle ni TLS ni AUTH : il ne peut plus capturer un seul message
- *     depuis la règle du 587 — c'est signalé dans le rapport.
+ *  2. Le faux courrier du banc parle STARTTLS et AUTH, avec un certificat
+ *     auto-signé fabriqué à chaque exécution ; ce certificat est donné au
+ *     service par NODE_EXTRA_CA_CERTS. Il vit dans le banc partagé
+ *     epreuve-banc-courrier.js, commun à cette épreuve et à celle du
+ *     formulaire de contact. L'ancien faux courrier en clair
+ *     (faux-serveur-courrier.js, ni TLS ni AUTH, incapable de capturer un
+ *     message depuis la règle du 587) a été retiré le 2026-09-10.
  *
  * Lancement : node --test epreuve/epreuve-webhook-fadebeat.test.js
  * (ou directement : node epreuve/epreuve-webhook-fadebeat.test.js)
@@ -28,13 +30,16 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import net from 'node:net';
-import tls from 'node:tls';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHmac, createHash, randomBytes, randomUUID } from 'node:crypto';
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { Worker } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
+/* Le faux courrier STARTTLS+AUTH, le certificat jetable, le module préchargé
+ * (587 → faux courrier) et le décodage du courrier reçu vivent dans le banc
+ * partagé avec l'épreuve du formulaire de contact (extraits d'ici le 2026-09-10). */
+import { demarrerFauxCourrier, texteCourrier, fabriquerCertificat, PRECHARGE } from './epreuve-banc-courrier.js';
 
 /* ─────────────────────────  le banc  ───────────────────────── */
 
@@ -243,87 +248,6 @@ async function demarrerFauxGithub({ portApi, portRaw }) {
   };
 }
 
-/* ─────────────  faux courrier : STARTTLS + AUTH, en mémoire  ───────────── */
-
-function demarrerFauxCourrier({ port, cle, cert }) {
-  const messages = [];
-  const brancher = (flux, chiffre) => {
-    let dansDonnees = false; let message = []; let enveloppe = { de: null, vers: [] }; let reste = ''; let etapeAuth = 0;
-    const rep = (l) => { try { flux.write(l + '\r\n'); } catch { /* fermé */ } };
-    if (!chiffre) rep('220 banc-essai.local ESMTP');
-    const traiter = (ligne) => {
-      if (dansDonnees) {
-        if (ligne === '.') {
-          dansDonnees = false;
-          messages.push({ date: Date.now(), de: enveloppe.de, vers: enveloppe.vers.slice(), chiffre, brut: message.join('\n') });
-          message = []; rep('250 2.0.0 Ok: message enregistre');
-        } else message.push(ligne);
-        return;
-      }
-      if (etapeAuth === 1) { etapeAuth = 2; rep('334 UGFzc3dvcmQ6'); return; }
-      if (etapeAuth === 2 || etapeAuth === 3) { etapeAuth = 0; rep('235 2.7.0 Authentication successful'); return; }
-      const c = ligne.toUpperCase();
-      if (c.startsWith('EHLO') || c.startsWith('HELO')) {
-        rep('250-banc-essai.local');
-        if (!chiffre) rep('250-STARTTLS');
-        rep('250-AUTH PLAIN LOGIN');
-        rep('250 SIZE 10485760');
-      } else if (c === 'STARTTLS') {
-        if (chiffre) { rep('503 5.5.1 déjà chiffré'); return; }
-        rep('220 2.0.0 Ready to start TLS');
-        flux.removeAllListeners('data');
-        const sec = new tls.TLSSocket(flux, { isServer: true, key: cle, cert });
-        sec.on('error', () => {});
-        brancher(sec, true);
-      } else if (c.startsWith('AUTH PLAIN')) {
-        if (c.trim() === 'AUTH PLAIN') { etapeAuth = 3; rep('334 '); } else rep('235 2.7.0 Authentication successful');
-      } else if (c.startsWith('AUTH LOGIN')) { etapeAuth = 1; rep('334 VXNlcm5hbWU6'); }
-      else if (c.startsWith('MAIL FROM')) { enveloppe.de = ligne.slice(ligne.indexOf(':') + 1).trim(); rep('250 2.1.0 Ok'); }
-      else if (c.startsWith('RCPT TO')) {
-        const dest = ligne.slice(ligne.indexOf(':') + 1).trim();
-        if (/@(chalou\.link|tonik\.ink)>?$/i.test(dest)) { enveloppe.vers.push(dest); rep('250 2.1.5 Ok'); } else rep('554 5.7.1 Relay access denied');
-      } else if (c === 'DATA') { dansDonnees = true; rep('354 Envoyez'); }
-      else if (c === 'QUIT') { rep('221 2.0.0 Au revoir'); flux.end(); }
-      else if (c === 'RSET') { enveloppe = { de: null, vers: [] }; rep('250 2.0.0 Ok'); }
-      else rep('250 2.0.0 Ok');
-    };
-    flux.on('data', (paquet) => {
-      reste += paquet.toString('utf8');
-      let coupure;
-      while ((coupure = reste.indexOf('\r\n')) !== -1) {
-        const ligne = reste.slice(0, coupure); reste = reste.slice(coupure + 2);
-        traiter(ligne);
-        if (flux.listenerCount('data') === 0) { reste = ''; break; }  /* STARTTLS : la suite est chiffrée */
-      }
-    });
-    flux.on('error', () => {});
-  };
-  const serveur = net.createServer((flux) => brancher(flux, false));
-  return new Promise((ok, ko) => {
-    serveur.once('error', ko);
-    serveur.listen(port, '127.0.0.1', () => ok({
-      messages,
-      depuis: (t) => messages.filter((m) => m.date >= t),
-      fermer: () => new Promise((r) => serveur.close(() => r())),
-    }));
-  });
-}
-
-function decoderQP(texte) {
-  const plat = texte.replace(/=\r?\n/g, '');
-  const octets = [];
-  for (let i = 0; i < plat.length; i++) {
-    if (plat[i] === '=' && /^[0-9A-Fa-f]{2}$/.test(plat.slice(i + 1, i + 3))) { octets.push(parseInt(plat.slice(i + 1, i + 3), 16)); i += 2; }
-    else for (const o of Buffer.from(plat[i], 'utf8')) octets.push(o);
-  }
-  return Buffer.from(octets).toString('utf8');
-}
-const texteCourrier = (m) => {
-  let t = decoderQP(m.brut);
-  for (const bloc of m.brut.match(/^(?:[A-Za-z0-9+/]{40,}={0,2}\n)+/gm) ?? []) { try { t += '\n' + Buffer.from(bloc.replace(/\n/g, ''), 'base64').toString('utf8'); } catch { /* pas du base64 */ } }
-  return t;
-};
-
 /* ─────────────────  lancer le service dans un état donné  ───────────────── */
 
 const enfants = [];
@@ -342,19 +266,7 @@ async function portLibre(base) {
   throw new Error('aucun port libre');
 }
 
-/* Le module préchargé : redirige UNIQUEMENT le port 587 vers le faux courrier. */
-const PRECHARGE = (portCourrier) => 'data:text/javascript,' + encodeURIComponent(`
-import net from 'node:net';
-const P = ${portCourrier};
-const orig = net.Socket.prototype.connect;
-net.Socket.prototype.connect = function (...a) {
-  const r = (o) => (o && typeof o === 'object' && Number(o.port) === 587) ? { ...o, port: P } : o;
-  if (Array.isArray(a[0])) { a[0][0] = r(a[0][0]); }
-  else if (a[0] && typeof a[0] === 'object') { a[0] = r(a[0]); }
-  else if (Number(a[0]) === 587) { a[0] = P; }
-  return orig.apply(this, a);
-};
-`);
+/* Le module préchargé (PRECHARGE, redirection du seul port 587) vient du banc partagé. */
 
 let PORT_SERVICE = 0;
 let PORT_COURRIER = 0;
@@ -435,20 +347,16 @@ before(async () => {
   fs.writeFileSync(path.join(DOSSIER_FADEBEAT, 'index.html'), fabriquerHtml({ marque: `ANCIENNE-VERSION-${COURSE}`, taille: 30_000 }).replace(LIGNE_CDN, LIGNE_LOCALE));
   fs.writeFileSync(path.join(DOSSIER_FADEBEAT, 'tailwind.js'), CONTENU_TAILWIND);
 
-  /* Certificat jetable pour le STARTTLS du faux courrier. */
-  const cle = path.join(BAC, 'banc-tls-cle');
-  CHEMIN_CERT = path.join(BAC, 'banc-tls-cert');
-  const r = spawnSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', cle, '-out', CHEMIN_CERT, '-days', '2',
-    '-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost,IP:127.0.0.1'], { stdio: 'ignore' });
-  assert.equal(r.status, 0, 'openssl indisponible : impossible de fabriquer le certificat du faux courrier');
-  fs.chmodSync(cle, 0o600);
+  /* Certificat jetable pour le STARTTLS du faux courrier (banc partagé). */
+  const certificat = fabriquerCertificat(BAC);
+  CHEMIN_CERT = certificat.cheminCert;
 
   PORT_MORT = await portLibre(27600);
   PORT_COURRIER = await portLibre(2600 + Math.floor(Math.random() * 200));
   const portApi = await portLibre(4600 + Math.floor(Math.random() * 200));
   const portRaw = await portLibre(portApi + 1);
   github = await demarrerFauxGithub({ portApi, portRaw });
-  courrier = await demarrerFauxCourrier({ port: PORT_COURRIER, cle: fs.readFileSync(cle), cert: fs.readFileSync(CHEMIN_CERT) });
+  courrier = await demarrerFauxCourrier({ port: PORT_COURRIER, cle: certificat.cle, cert: certificat.cert });
 
   service = await lancerService('principal');
   PORT_SERVICE = service.port;

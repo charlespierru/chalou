@@ -272,7 +272,8 @@ tel quel pour la traçabilité, **c'est cette section qui fait foi**.
   nginx, c'est l'adresse transmise par `X-Forwarded-For` (`trustProxy` est
   actif), à faire vérifier par l'auditeur.
 - **Trouvailles hors chantier** (écrites dans PASSATION §8) : l'épreuve du
-  formulaire est cassée depuis le durcissement du courrier du 2026-09-08 ; le
+  formulaire ne tournait plus depuis le durcissement du courrier du 2026-09-08
+  (réparée le 2026-09-10, nœud 94.c : banc autonome, 30/30) ; le
   courriel d'alerte va dans la boîte de réception, pas dans le dossier
   « Alertes » de Charles (tri côté client, motif à aligner).
 
