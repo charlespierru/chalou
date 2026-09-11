@@ -19,8 +19,8 @@ FadeBeat, contact, mentions. `www` répond, une adresse inconnue rend une vraie
 erreur 404 (mesuré).
 
 **Bilingue** : le français est écrit en clair dans les pages, l'anglais vit dans
-`public/js/en.js`. 193 textes marqués, 165 clés, aucune traduction manquante,
-aucune clé orpheline (mesuré le 2026-09-12). **L'anglais n'est pas une traduction** : c'est une réécriture, à la
+`public/js/en.js`. 193 textes marqués, 165 clés, chaque texte a sa version
+anglaise, aucune clé orpheline (mesuré le 2026-09-12). **L'anglais n'est pas une traduction** : c'est une réécriture, à la
 demande de Charles — « les pages doivent être rédigées comme si le site était
 nativement en anglais ». Ne pas le retraduire mot à mot.
 

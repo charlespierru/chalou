@@ -2,7 +2,7 @@
  *
  * Le principe : le français est écrit en clair dans le HTML. Au chargement, on
  * en prend un instantané. Passer en anglais remplace les textes marqués ;
- * revenir au français restaure l'instantané. Rien n'est traduit deux fois, et
+ * revenir au français restaure l'instantané. Rien n'est remplacé deux fois, et
  * sans JavaScript la page reste entièrement lisible en français.
  */
 
