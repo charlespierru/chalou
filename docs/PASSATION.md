@@ -19,8 +19,8 @@ FadeBeat, contact, mentions. `www` répond, une adresse inconnue rend une vraie
 erreur 404 (mesuré).
 
 **Bilingue** : le français est écrit en clair dans les pages, l'anglais vit dans
-`public/js/en.js`. 192 textes, aucune traduction manquante, aucune clé orpheline
-(mesuré). **L'anglais n'est pas une traduction** : c'est une réécriture, à la
+`public/js/en.js`. 193 textes marqués, 165 clés, aucune traduction manquante,
+aucune clé orpheline (mesuré le 2026-09-12). **L'anglais n'est pas une traduction** : c'est une réécriture, à la
 demande de Charles — « les pages doivent être rédigées comme si le site était
 nativement en anglais ». Ne pas le retraduire mot à mot.
 
@@ -81,6 +81,16 @@ en bout, et un échec provoqué a bien déclenché l'alerte par courriel (mesur�
 **Retour arrière du site** : refaire pointer le lien `courant` vers une autre
 version. Quelques secondes, sans toucher à nginx. Le vhost d'origine et la page
 d'avant sont dans `/root/sauvegardes-chalou/`.
+
+**Mettre en ligne une version** (fait ainsi le 2026-09-12, version
+`20260912-002825`) : archive de `public/` SANS `apps/` (FadeBeat est servie par
+le webhook depuis son propre dossier, une copie dans la version serait morte),
+dépôt dans `versions/<date>/` en `root:root`, dossiers 775 et fichiers 664 comme
+la version d'avant, `restorecon`, comparaison des sommes de contrôle de chaque
+fichier entre la station et le serveur, puis bascule du lien `courant` par
+`ln -sfn` sur un nom temporaire et `mv -T` : atomique, nginx n'est pas touché.
+Contrôle après : les six pages en 200, le texte neuf visible, l'appli FadeBeat
+toujours servie, les autres sites de la machine inchangés.
 
 ## 3. Les pièges — chacun a déjà coûté du temps
 
@@ -426,3 +436,13 @@ Verdict « pas prêt », quatre écarts réels, tous corrigés le soir même :
   le mot que le filtre global du serveur de courrier (règle 5 de
   `before.sieve` sur hostingerd) reconnaît pour ranger dans « Alertes ».
 
+## 9. Fait le 2026-09-12 — la vitrine dit l'accélération (94.d)
+
+L'appli FadeBeat servie portait déjà le panneau Accélération (webhook du
+94.b), mais la page FadeBeat et la carte d'accueil n'en disaient rien. Ajouté :
+un paragraphe `fb.body3` sur la page, une incise sur la carte d'accueil,
+anglais réécrit. Parité FR/EN vérifiée (165 clés des deux côtés), commit
+`98c147b`, mise en ligne dans la version `20260912-002825` selon la procédure
+décrite au §2, les six pages en 200 et le texte visible sur chalou.link
+(mesuré). Texte seul : ni épreuve ni audit. La version `20260907-225629` reste
+en place pour un retour arrière.
