@@ -57,7 +57,7 @@ export default {
   'apps.fadebeat.eyebrow': 'In your browser · free',
   'apps.fadebeat.body':
     'A metronome that lets its beats die away, one by one, until you are the one keeping ' +
-    'time.',
+    'time — and that can speed up in steps.',
   'apps.fadebeat.play': 'Open FadeBeat',
 
   'invite.quote': '“Try them. Then tell me what’s missing.”',
@@ -88,6 +88,10 @@ export default {
   'fb.body2':
     'Every beat has its own settings. Fade the downbeat and keep the rest, or the other way ' +
     'round. This is ear-and-body work, not just a click track.',
+  'fb.body3':
+    'FadeBeat can now speed up, too: set a starting tempo and a target, and it climbs in ' +
+    'steps — a few beats per minute every few bars, always on the downbeat. It can slow ' +
+    'down just as well.',
   'fb.launch': 'Open FadeBeat',
   'fb.launchHint':
     'Opens in a new tab, full screen. Nothing to install, no account to set up.',
