@@ -57,7 +57,10 @@
 
 set -euo pipefail
 
-ICI=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+# readlink -f : le script est aussi appelé par un lien depuis ~/.local/bin
+# (videos-deposer, videos-retirer) ; sans lui, dirname donnerait ~/.local/bin
+# et videos-commun.sh ne serait pas trouvé.
+ICI=$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)
 # shellcheck source=videos-commun.sh
 source "$ICI/videos-commun.sh"
 
