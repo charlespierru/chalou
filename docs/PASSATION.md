@@ -60,6 +60,35 @@ que lui —, **relit l'archive déposée** pour vérifier qu'elle porte bien les
 messages, puis purge au-delà de 30 jours. Une exécution réelle a réussi de bout
 en bout, et un échec provoqué a bien déclenché l'alerte par courriel (mesuré).
 
+**Depuis le 2026-09-17, une page PRIVÉE pour Matthieu** (chantier 94.e, plan
+`docs/videos-matthieu-plan.md`, procédure `deploy/videos-matthieu.md`).
+Adresse : `https://chalou.link/videos-<segment>/`, où `<segment>` est un aléa de
+16 caractères — **ni le segment ni le mot de passe ne sont dans ce dépôt** : ils
+sont au coffre, sous `videos-matthieu/segment` et `videos-matthieu/mot-de-passe`,
+et sur la station dans un fichier à 0600. Protégée par `auth_basic` nginx, un
+seul compte `matthieu`. Aucune page publique ne la nomme, aucun lien n'y mène,
+elle n'est pas indexée. Charles y dépose et en retire des vidéos depuis la
+station, en une commande, par `deploy/videos-deposer.sh` et
+`deploy/videos-retirer.sh` ; les scripts contrôlent eux-mêmes ce qu'ils viennent
+de publier (401 sans mot de passe, 200 avec, 206 en reprise, 404 après retrait)
+et refusent de dire « déposé » sans l'avoir mesuré. Épreuve indépendante :
+`epreuve/epreuve-videos-matthieu.test.js` (75 cas). Mis en place le 2026-09-17
+par Charles en console ; audité et corrigé en local le même jour.
+
+**Deux choses à savoir sur cette page** :
+
+- **`public/styles/videos.css` n'est PAS en ligne.** La page privée s'affiche
+  aujourd'hui avec `site.css` et `tokens.css` seulement. Cette feuille partira
+  à la prochaine mise en ligne d'une version du site (procédure au §2) — rien
+  à faire de particulier, juste ne pas l'oublier.
+- **Le vhost installé n'est plus exactement le modèle du dépôt** : quatre
+  écarts sans gravité restent à reprendre au prochain passage serveur. La liste
+  est dans `deploy/videos-matthieu.md`, § « Ce qui reste à faire côté serveur ».
+  S'y ajoute une trace : **une ligne** dans `/var/log/nginx/access.log` (datée
+  02:31:56 UTC le 2026-09-17) et **neuf** dans `error.log` portent l'adresse
+  privée, écrites avant les correctifs. On ne retouche pas un journal à la main :
+  elles partiront avec la rotation.
+
 ## 2. Où sont les choses
 
 | Quoi | Où |
@@ -77,6 +106,15 @@ en bout, et un échec provoqué a bien déclenché l'alerte par courriel (mesur�
 | Secret du webhook | serveur : `/etc/chalou/webhook-fadebeat` (root:chalou 640, posé par le guichet) ; coffre : `github/webhook-fadebeat` |
 | Webhook GitHub | dépôt `charlespierru/FadeBeat`, réglages → Webhooks, créé à la main par Charles, événement push seul |
 | Rechargeur nginx | serveur : `/usr/local/sbin/nginx-recharger-sur` — teste, recharge sans redémarrer, compare les 4 sites avant/après |
+| **Page privée de Matthieu** | `https://chalou.link/videos-<segment>/` — segment et mot de passe au coffre, sous `videos-matthieu/segment` et `videos-matthieu/mot-de-passe` |
+| Mots de passe de cette page | serveur : `/etc/nginx/.htpasswd-videos` (`root:nginx 0640`, un seul compte `matthieu`) |
+| Les vidéos déposées | serveur : `/var/www/chalou.link/videos/` (propriété `charles`, frère des versions datées, **dans aucune sauvegarde**) |
+| `map` de cette page | serveur : `/etc/nginx/conf.d/videos-matthieu-map.conf` (`Content-Disposition` sur les vidéos, rien sur la page) |
+| `location` de cette page | serveur : dans `/etc/nginx/conf.d/chalou.link.conf` ; modèle dans `deploy/videos-nginx.conf.exemple` |
+| Sauvegarde du vhost d'avant | serveur : `/root/sauvegardes-chalou/chalou.link.conf.avant-videos.20260917-043152` |
+| Déposer / retirer une vidéo | station : `deploy/videos-deposer.sh`, `deploy/videos-retirer.sh`, `deploy/videos-page.sh`, `deploy/videos-commun.sh` |
+| Procédure complète de cette page | `deploy/videos-matthieu.md` |
+| Secrets de cette page, sur la station | fichier à 0600 sous `~/.config/chalou/` (chemin exact dans `deploy/videos-matthieu.md` §2) |
 
 **Retour arrière du site** : refaire pointer le lien `courant` vers une autre
 version. Quelques secondes, sans toucher à nginx. Le vhost d'origine et la page

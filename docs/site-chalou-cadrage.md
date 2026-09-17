@@ -73,6 +73,15 @@ applis, en parler autour de lui, faire des retours.
   s'adresse au public voyant. (HTML sémantique et contrastes corrects restent
   la base normale du métier, ce n'est pas un chantier d'accessibilité.)
 - Pas de compte utilisateur, pas de connexion, pas de zone privée.
+
+  > **Note du 2026-09-16 — le nœud 94.e y déroge, sur décision de Charles.**
+  > Une page privée à mot de passe a été ajoutée pour Matthieu :
+  > `https://chalou.link/videos-<segment>/`, protégée par `auth_basic` nginx,
+  > avec un seul compte. Elle est **hors du site public** — aucune page ne la
+  > nomme, aucun lien n'y mène, elle n'est pas indexée, elle ne partage avec le
+  > site que ses feuilles de style. Le reste de la ligne tient toujours : pas
+  > de compte utilisateur, pas de connexion sur le site lui-même.
+  > Plan et décisions : `docs/videos-matthieu-plan.md`.
 - Pas de blog, pas de lettre d'information, pas de réseaux sociaux.
 - Pas de suivi d'audience ni de cookie de mesure.
 - Aucune reprise du thème noir et or de la page actuelle : elle est remplacée.

@@ -1,0 +1,165 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  chalou.link — la page privée de Matthieu, côté nginx
+#
+#  Modèle à recopier sur le serveur en remplaçant PARTOUT la marque SEGMENT
+#  par l'aléa de 16 caractères tiré en phase 3 (voir deploy/videos-matthieu.md).
+#  Rien ici ne se recopie tel quel : SEGMENT est un secret, il ne doit jamais
+#  entrer dans ce dépôt.
+#
+#  Ce fichier contient DEUX morceaux, qui ne vont pas au même endroit :
+#    A. une `map`, dans son propre fichier /etc/nginx/conf.d/ (contexte http) ;
+#    B. deux `location`, à l'intérieur du bloc `server` de chalou.link.
+#
+#  Rechargement : JAMAIS `systemctl reload nginx` à la main. C'est
+#  /usr/local/sbin/nginx-recharger-sur qui teste, recharge, compare les quatre
+#  sites avant et après, et restaure le vhost si le test échoue.
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+# ───────────────────────────────────────────────────────────────────────────
+#  A. /etc/nginx/conf.d/videos-matthieu-map.conf        (contexte : http)
+# ───────────────────────────────────────────────────────────────────────────
+#
+# POURQUOI cette map : `Content-Disposition: attachment` doit tomber sur les
+# vidéos et SEULEMENT sur elles. S'il tombait aussi sur index.html, le
+# navigateur téléchargerait la page au lieu de l'afficher, et Matthieu ne
+# verrait jamais la liste.
+#
+# La map rend une valeur VIDE pour tout ce qui n'est pas une vidéo, et nginx
+# n'émet pas un en-tête dont la valeur est vide. Attention : ce comportement
+# n'est PAS écrit dans la documentation de nginx — il est dans son code
+# (`ngx_http_add_header()`, src/http/modules/ngx_http_headers_filter_module.c,
+# qui n'ajoute l'en-tête que `if (value->len)`). Vérifié à la source le
+# 2026-09-16, et à revérifier par une vraie requête en phase 3 :
+#     curl -sI --netrc-file … https://chalou.link/videos-SEGMENT/  | grep -i disposition
+#   → doit ne RIEN rendre pour la page, et « attachment » pour une vidéo.
+#
+# Un fichier séparé dans conf.d/ : `map` ne vit qu'au niveau http, et le vhost
+# de chalou.link commence par `server {`. L'ordre des fichiers inclus n'a pas
+# d'importance : nginx résout les variables après avoir lu toute la
+# configuration.
+
+map $uri $videos_disposition {
+    default                                             "";
+    "~*^/videos-SEGMENT/[^/]+\.(mp4|mov|webm|mkv|m4v)$"  "attachment";
+}
+
+
+# ───────────────────────────────────────────────────────────────────────────
+#  B. Dans /etc/nginx/conf.d/chalou.link.conf, à l'intérieur du `server` qui
+#     écoute en 443 pour chalou.link — à côté du `location ^~ /apps/fadebeat/`.
+# ───────────────────────────────────────────────────────────────────────────
+
+    # Sans la barre finale, on renvoie vers la forme avec barre — sinon
+    # `alias` ne s'applique pas et la page ne sort pas. Même geste que pour
+    # /apps/fadebeat. L'adresse est écrite en entier : elle ne dépend pas de
+    # l'en-tête Host envoyé par le client.
+    location = /videos-SEGMENT {
+        # Sans cette ligne, la redirection laissait UNE ligne dans le journal
+        # d'accès, avec l'adresse secrète dedans (mesuré en phase 3, le
+        # 2026-09-17 : le contrôle du journal a crié). Comme dans le bloc d'en
+        # dessous, elle réduit les traces — elle ne les supprime pas (voir là-bas).
+        access_log off;
+
+        # ─── Les MÊMES en-têtes que le bloc principal, et pourquoi ───
+        # Une 301 est CACHEABLE, et son en-tête `Location:` porte l'adresse
+        # privée en clair. Sans ces lignes, un intermédiaire ou le navigateur
+        # gardait la redirection — et son adresse — alors que le bloc d'en
+        # dessous, lui, interdit tout cache. Écart relevé par l'audit du
+        # 2026-09-17.
+        # Règle nginx : dès qu'un `location` pose UN SEUL `add_header`, il
+        # n'hérite plus d'AUCUN `add_header` du niveau au-dessus. Les quatre
+        # en-têtes de sécurité du `server` doivent donc être recopiés ici aussi,
+        # mot pour mot, exactement comme dans le bloc principal.
+        add_header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header Cache-Control "private, no-store" always;
+
+        return 301 https://chalou.link/videos-SEGMENT/;
+    }
+
+    location ^~ /videos-SEGMENT/ {
+
+        # LES DEUX BARRES FINALES COMPTENT. `location ^~ /videos-SEGMENT/`
+        # avec `alias /var/www/chalou.link/videos/` fait correspondre
+        #     /videos-SEGMENT/film.mp4 → /var/www/chalou.link/videos/film.mp4
+        # Enlever l'une des deux, et nginx sert le mauvais dossier — au pire
+        # /var/www/chalou.link/ tout entier, versions du site comprises.
+        # `^~` empêche en plus qu'un `location` en expression régulière défini
+        # ailleurs dans le vhost ne prenne la main sur celui-ci.
+        alias /var/www/chalou.link/videos/;
+        index index.html;
+        autoindex off;              # la liste est une page générée, pas un index nu
+
+        # Le royaume (« realm ») part tel quel dans l'en-tête HTTP
+        # `WWW-Authenticate`, et un en-tête HTTP est de l'ASCII : « Vidéos »
+        # y envoyait un accent brut, que chaque navigateur interprète à sa
+        # façon (ou affiche en mojibake dans sa fenêtre de mot de passe).
+        # Écrit sans accent, exprès. Relevé par l'audit du 2026-09-17.
+        auth_basic           "Videos de Charles";
+        auth_basic_user_file /etc/nginx/.htpasswd-videos;
+
+        # .mkv n'a pas de type MIME dans mime.types.
+        #
+        # PIÈGE : un bloc `types` dans un `location` REMPLACE la table héritée,
+        # il ne s'y ajoute pas. La documentation de nginx le montre elle-même :
+        # `types { }` suivi de `default_type application/octet-stream` sert
+        # tout en octet-stream. Écrire seulement `types { video/x-matroska mkv; }`
+        # ferait donc perdre text/html, text/css, video/mp4… et la page
+        # partirait sans type utilisable.
+        # La forme correcte : recharger la table standard (mime.types EST un
+        # bloc `types`), puis en ajouter un second dans le même contexte —
+        # deux blocs `types` au même niveau s'additionnent
+        # (ngx_http_core_types() ne crée le tableau que s'il est vide).
+        include /etc/nginx/mime.types;
+        types {
+            video/x-matroska  mkv;
+        }
+
+        # ─── Les journaux : ce que ces deux lignes font, et ce qu'elles ne
+        #     font pas ───
+        #
+        # `access_log off` RÉDUIT les traces, il ne les SUPPRIME pas. Ce qui
+        # reste, mesuré par l'audit du 2026-09-17 :
+        #   · une requête mal formée ou hors de ce `location` (TRACE, « ../ »,
+        #     un préfixe voisin de l'adresse) n'entre jamais ici : elle est
+        #     journalisée par le bloc `server`, adresse comprise ;
+        #   · l'historique du navigateur de Matthieu porte l'adresse en clair.
+        # Le segment n'est donc PAS un secret fort : c'est un frein à
+        # l'énumération. Le vrai secret, c'est le mot de passe.
+        #
+        # `error_log /dev/null crit;` : les 403 et 404 sur cette adresse
+        # n'iront plus au journal d'erreurs, où ils s'écrivaient avec l'adresse
+        # ET l'IP du visiteur (mesuré le 2026-09-17). `crit` garde quand même
+        # les pannes vraies du serveur. Ce qui reste écrit, et c'est assumé :
+        # tout ce qui tombe HORS de ce `location` — donc les requêtes tordues
+        # dont il est question plus haut.
+        #
+        # Conséquence assumée des deux : un forçage de mot de passe sur cette
+        # adresse est invisible.
+        access_log off;
+        error_log  /dev/null crit;
+
+        # ─── Les quatre en-têtes du niveau `server`, RÉÉCRITS À L'IDENTIQUE ───
+        # Règle nginx : dès qu'un `location` pose un seul `add_header`, il
+        # n'hérite plus d'AUCUN `add_header` du niveau au-dessus. Sans ces
+        # quatre lignes, la page privée serait la seule du site sans politique
+        # de sécurité. Elles doivent rester copiées mot pour mot depuis le
+        # bloc `server` : si l'une y change, changer celle-ci aussi.
+        add_header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+        # ─── Ce que cette page ajoute ───
+        # Si l'adresse fuit et qu'un robot passe le mot de passe un jour,
+        # rien n'est indexé ni archivé.
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        # Rien ne reste dans le cache d'un intermédiaire ni du navigateur.
+        add_header Cache-Control "private, no-store" always;
+        # « attachment » sur les vidéos, rien sur index.html (voir la map).
+        add_header Content-Disposition $videos_disposition always;
+    }

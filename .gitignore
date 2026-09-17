@@ -13,3 +13,30 @@ npm-debug.log*
 
 # Bac à sable des épreuves locales
 epreuve/bac/
+
+# ── Chantier 94.e — la page privée de Matthieu ──────────────────────────────
+# Le segment de l'adresse et le mot de passe sont DEUX secrets : ils vivent
+# dans ~/.config/chalou/ et au coffre, jamais ici. Le modèle de configuration
+# nginx porte la marque « SEGMENT » et reste, lui, dans le dépôt
+# (deploy/videos-nginx.conf.exemple).
+videos-matthieu.env
+*videos*.env
+htpasswd-videos
+.htpasswd-videos
+deploy/videos-nginx.conf
+
+# Ni vidéos, ni miroir du dossier serveur, ni page générée dans le dépôt : des
+# giga-octets n'ont rien à faire dans un historique git, et la page se
+# refabrique à chaque dépôt. Pour ajouter malgré tout un fichier : git add -f
+#
+# CE SONT DES DOSSIERS, PAS DES EXTENSIONS. Jusqu'à l'audit du 2026-09-17, cinq
+# motifs globaux — *.mp4 *.mov *.mkv *.m4v *.webm — masquaient toute vidéo
+# n'importe où dans le dépôt : une vidéo de démonstration posée un jour dans
+# public/ aurait disparu de `git status` sans que rien ne le dise, et c'est
+# exactement la panne silencieuse qu'un .gitignore doit éviter. Les quatre
+# dossiers ci-dessous sont ignorés EN ENTIER, donc toute vidéo qui y tombe
+# l'est aussi ; ailleurs, un fichier vidéo se voit, et Charles décide.
+# (epreuve/bac/ est déjà ignoré plus haut, pour la même raison.)
+videos/
+deploy/videos/
+deploy/miroir/

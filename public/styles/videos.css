@@ -1,0 +1,105 @@
+/* Page privée « Vidéos pour Matthieu » — mise en page de la liste.
+ *
+ * Cette feuille est servie par le site (/styles/videos.css) et non posée dans
+ * le dossier des vidéos : la politique de sécurité du site (CSP) interdit tout
+ * style en ligne, et un `style-src 'self'` n'accepte une feuille que si elle
+ * vient du site. Elle vient donc d'ici, comme tokens.css et site.css.
+ *
+ * Elle ne fait qu'ajouter : tout ce qui est commun (polices, couleurs,
+ * en-tête, pied, boutons) vient de tokens.css et site.css, sans copie.
+ */
+
+/* L'étiquette « page privée » à droite de l'en-tête. */
+.videos-etiquette {
+  font-size: var(--text-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-gold);
+}
+
+/* La ligne de résumé : combien de vidéos, quel poids total. */
+.videos-resume {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin-bottom: 0;
+}
+
+.videos-section { padding: 0 0 var(--s-16); }
+
+.videos-liste {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+}
+
+/* Une vidéo : le texte à gauche, le bouton à droite. */
+.video {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-6);
+  flex-wrap: wrap;
+  padding: var(--s-4) var(--s-6);
+  background: var(--ink-ivory);
+  border: var(--hairline) solid color-mix(in srgb, var(--ink-hairline) 12%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.video-texte {
+  min-width: 0;          /* sans quoi un nom très long empêche le retour à la ligne */
+  flex: 1 1 18rem;
+}
+
+.video-nom {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink-black);
+  margin: 0 0 var(--s-1);
+  /* Un nom sans espace (fréquent pour un fichier) doit pouvoir se couper. */
+  overflow-wrap: anywhere;
+}
+
+.video-meta {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin: 0;
+  max-width: none;
+}
+
+.video .btn { flex: 0 0 auto; }
+
+/* Dossier vide : on le dit, on ne laisse pas une page muette. */
+.videos-vide {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-xl);
+  color: var(--ink-muted);
+  border-left: 2px solid color-mix(in srgb, var(--ink-gold) 45%, transparent);
+  padding-left: var(--s-6);
+  max-width: 34rem;
+}
+
+/* ---------- Téléphone ---------- */
+
+@media (max-width: 40rem) {
+  .video {
+    /* Le bouton passe sous le texte et prend toute la largeur : cible large,
+     * pas de bouton écrasé dans un coin. */
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-4);
+    padding: var(--s-4);
+  }
+  /* PIÈGE VU À L'ÉCRAN : la base « 18rem » de .video-texte vaut dans l'axe
+   * principal. Une fois la carte en colonne, cet axe devient la VERTICALE et
+   * chaque carte prenait 288 px de haut, avec un grand vide sous le texte.
+   * En colonne, le bloc texte prend donc la hauteur de son contenu. */
+  .video-texte { flex: 0 1 auto; }
+  .video .btn { justify-content: center; }
+  .videos-vide { padding-left: var(--s-4); font-size: var(--text-lg); }
+}
