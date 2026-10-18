@@ -153,12 +153,9 @@ commentaire se met alors à décrire le mauvais bloc, et le prochain lecteur
 croira ce qu'il lit. **On insère donc avant la ligne de commentaire**, pas
 avant le `location`.
 
-> **Sur le serveur, le bloc posé le 2026-09-17 est à ce mauvais endroit** :
-> il a été inséré avant `location /api/`, donc après le commentaire du
-> formulaire. nginx s'en moque — l'ordre des `location` ne change rien ici, et
-> le site marche. C'est un défaut de lisibilité, pas de fonctionnement : à
-> remettre en place lors du prochain passage serveur (voir le § « Ce qui reste
-> à faire côté serveur »).
+> **Corrigé le 2026-10-17** : le bloc a été déplacé avant le commentaire du
+> formulaire (passage serveur, voir §5bis). Le piège décrit ci-dessus reste
+> valable pour toute future édition du vhost.
 
 Sauvegarder le vhost avant de l'ouvrir :
 
@@ -202,11 +199,11 @@ privée après un téléchargement :
     ssh hostinger "sudo grep -c videos-SEGMENT /var/log/nginx/*access*.log"   # 0
     ssh hostinger "sudo grep -c videos-SEGMENT /var/log/nginx/error.log"      # 0
 
-> Les lignes écrites **avant** les correctifs du 2026-09-17 sont encore là :
-> une dans `access.log` (le 301 d'avant `access_log off`), neuf dans
-> `error.log`. On ne retouche pas un journal à la main ; elles partiront avec
-> la rotation. Un compte non nul sur une machine qui n'a pas encore tourné ses
-> journaux n'est donc pas forcément une fuite neuve : regarder les dates.
+> Note historique : les lignes écrites avant les correctifs du 2026-09-17
+> (une dans `access.log`, neuf dans `error.log`) sont parties avec la rotation
+> quotidienne — mesuré le 2026-10-17 : zéro ligne dans les deux journaux pour
+> l'adresse privée. On ne retouche jamais un journal à la main. Un compte non
+> nul sur une machine n'est pas forcément une fuite neuve : regarder les dates.
 
 ---
 
@@ -312,25 +309,33 @@ identique sur toute machine, donc testable.
 
 ---
 
-## 5bis. Ce qui reste à faire côté serveur
+## 5bis. Le passage serveur — FAIT le 2026-10-17
 
-L'audit du 2026-09-17 a fait corriger le modèle `deploy/videos-nginx.conf.exemple`
-**après** que le vhost a été posé sur la machine. Le site marche, rien n'est
-cassé — mais le vhost installé n'est plus le modèle. Quatre écarts, à reprendre
-en un seul passage serveur (sauvegarde du vhost, édition,
-`nginx-recharger-sur`, puis les contrôles de 3.7) :
+L'audit du 2026-09-17 avait fait corriger le modèle
+`deploy/videos-nginx.conf.exemple` **après** que le vhost avait été posé sur la
+machine. Les quatre écarts ont été rapportés sur le serveur le 2026-10-17, en
+un seul passage :
 
-| À changer dans `/etc/nginx/conf.d/chalou.link.conf` | Pourquoi |
-|---|---|
-| `auth_basic "Vidéos de Charles"` → `"Videos de Charles"` | un en-tête HTTP est de l'ASCII ; l'accent y part brut |
-| Ajouter les 6 `add_header` au `location = /videos-<segment>` | une 301 est cacheable et son `Location:` porte l'adresse ; un `add_header` dans un `location` annule l'héritage, il faut donc aussi y recopier les 4 de sécurité |
-| Ajouter `error_log /dev/null crit;` au `location ^~ /videos-<segment>/` | les 403 et 404 y écrivaient l'adresse privée et l'IP |
-| Déplacer le bloc des vidéos **avant** le commentaire du formulaire de contact | il est aujourd'hui inséré entre ce commentaire et son `location /api/` (voir 3.5) |
+- royaume `auth_basic` réécrit sans accent (« Videos de Charles ») ;
+- les six `add_header` ajoutés au `location = /videos-<segment>` (la 301) ;
+- `error_log /dev/null crit;` ajouté au `location ^~ /videos-<segment>/` ;
+- bloc déplacé avant le commentaire du formulaire de contact.
 
-Aucun de ces quatre points n'empêche la page de servir : ce sont une fuite de
-journal, un cache de redirection, un accent dans une fenêtre de mot de passe et
-un commentaire qui décrit le mauvais bloc. À faire au prochain passage, pas en
-urgence.
+Déroulé : sauvegarde fidèle préalable
+(`/root/sauvegardes-chalou/chalou.link.conf.avant-retouche-videos.20261017-142702`,
+empreinte vérifiée identique à la copie de travail), vhost remplacé par le
+modèle substitué — l'écriture finale par Charles en console (une ligne), les
+radars de la station ayant refusé ce jour-là toute écriture serveur par la
+session — puis rechargement par `nginx-recharger-sur` (les 4 sites 200 avant
+et après).
+
+Preuves mesurées le 2026-10-17 : 401 sans mot de passe, royaume affiché sans
+accent ; la 301 porte les six en-têtes ; page 200 `text/html` **sans**
+`Content-Disposition` ; vidéo réelle 200 `video/mp4` `attachment`
+`Accept-Ranges` ; plage 206 ; un 404 frais ne laisse **aucune** ligne dans
+`access.log` ni `error.log` (et les dix lignes du 17/09 sont parties avec la
+rotation). La copie d'attente `/home/charles/chalou.link.conf.corrige` reste
+sur le serveur comme preuve de vérification.
 
 ---
 

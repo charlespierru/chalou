@@ -81,13 +81,11 @@ par Charles en console ; audité et corrigé en local le même jour.
   aujourd'hui avec `site.css` et `tokens.css` seulement. Cette feuille partira
   à la prochaine mise en ligne d'une version du site (procédure au §2) — rien
   à faire de particulier, juste ne pas l'oublier.
-- **Le vhost installé n'est plus exactement le modèle du dépôt** : quatre
-  écarts sans gravité restent à reprendre au prochain passage serveur. La liste
-  est dans `deploy/videos-matthieu.md`, § « Ce qui reste à faire côté serveur ».
-  S'y ajoute une trace : **une ligne** dans `/var/log/nginx/access.log` (datée
-  02:31:56 UTC le 2026-09-17) et **neuf** dans `error.log` portent l'adresse
-  privée, écrites avant les correctifs. On ne retouche pas un journal à la main :
-  elles partiront avec la rotation.
+- **Le vhost installé est redevenu le modèle du dépôt** : les quatre écarts de
+  l'audit du 17/09 ont été rapportés sur le serveur le 2026-10-17 (preuves dans
+  `deploy/videos-matthieu.md` §5bis). Les lignes de journal du 17/09 (une dans
+  `access.log`, neuf dans `error.log`) sont parties avec la rotation — mesuré
+  zéro ligne dans les deux le 2026-10-17.
 
 ## 2. Où sont les choses
 

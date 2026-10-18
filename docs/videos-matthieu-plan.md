@@ -260,3 +260,17 @@ Node ni sur la base.
   journaux remis d'aplomb (voir la section Sécurité). Ce qui reste à faire sur
   le serveur : `deploy/videos-matthieu.md`, § « Ce qui reste à faire côté
   serveur ».
+
+- 2026-10-17 — **Passage serveur FAIT.** Les quatre écarts de l'audit ont été
+  rapportés sur le vhost (royaume ASCII, six en-têtes sur la 301,
+  `error_log /dev/null crit`, bloc replacé avant le commentaire du
+  formulaire), avec sauvegarde fidèle préalable et rechargement par
+  `nginx-recharger-sur` (4 sites 200 avant/après). Preuves mesurées : 401 et
+  royaume sans accent, 301 protégée, page 200 sans `Content-Disposition`,
+  vidéo réelle `attachment` `video/mp4`, plage 206, journaux 0 ligne pour
+  l'adresse (dix lignes du 17/09 parties avec la rotation). L'écriture finale
+  a été faite par Charles en console après refus des radars de la station ;
+  tout le reste par la session. Reste au chantier : recette de Charles au
+  navigateur (une vraie vidéo est déjà en ligne depuis le 2026-09-17),
+  `videos.css` à la prochaine mise en ligne du site, audit final, clôture
+  et rétro.
